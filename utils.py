@@ -1,4 +1,7 @@
-def calculate_total_pages(text_content, font_size, letter_spacing, generate_mode):
+from PyQt6.QtGui import QFont, QFontMetrics
+
+
+def calculate_total_pages(text_content, font_size, letter_spacing, generate_mode, font_family='Arial'):
     """计算总页数"""
     if not text_content:
         return 1
@@ -30,6 +33,14 @@ def calculate_total_pages(text_content, font_size, letter_spacing, generate_mode
     text_left = 10  # 简化计算，不考虑position_x
     line_width = 760 - 30  # rect.width() - 30
     
+    # 创建字体对象，用于获取字体度量信息
+    font = QFont(font_family, font_size)
+    font_metrics = QFontMetrics(font)
+    
+    # 计算线的参数（使用四线三格的参数，因为它是默认值）
+    line_height = 40  # 每行的高度
+    group_gap = 40  # 组之间的间距
+    
     while word_index < len(words):
         # 模拟一页的绘制
         line_y = 20  # rect.top() + 20
@@ -38,7 +49,6 @@ def calculate_total_pages(text_content, font_size, letter_spacing, generate_mode
         while line_y < page_height and word_index < len(words):
             # 模拟一行能容纳多少单词
             x = text_left
-            words_in_line = 0
             
             while word_index < len(words):
                 word = words[word_index]
@@ -48,9 +58,11 @@ def calculate_total_pages(text_content, font_size, letter_spacing, generate_mode
                     word_index += 1
                     break
                 
-                # 估算单词宽度（简化计算）
-                word_width = len(word) * (font_size * 0.6) + letter_spacing * len(word)
-                space_width = font_size * 0.6 + letter_spacing
+                # 精确计算单词宽度，与draw_lines_and_text方法一致
+                word_width = 0
+                for char in word:
+                    word_width += font_metrics.horizontalAdvance(char) + letter_spacing
+                space_width = font_metrics.horizontalAdvance(' ') + letter_spacing
                 
                 # 如果当前行放不下这个单词，换行
                 if x + word_width > text_left + line_width and x > text_left:
@@ -59,22 +71,21 @@ def calculate_total_pages(text_content, font_size, letter_spacing, generate_mode
                 # 消耗这个单词
                 x += word_width + space_width
                 word_index += 1
-                words_in_line += 1
             
             # 移动到下一行
-            line_y += 40  # line_height
+            line_y += line_height
             
             # 模拟抄写模式
             if generate_mode == '抄写' or generate_mode == '描红+抄写':
                 # 抄写模式：添加组间距，然后绘制空白行
-                line_y += 40  # group_gap
+                line_y += group_gap
                 # 绘制空白行
-                line_y += 40  # line_height
+                line_y += line_height
                 # 移动到下一组
-                line_y += 40  # group_gap
+                line_y += group_gap
             else:
                 # 非抄写模式：直接添加组间距
-                line_y += 40  # group_gap
+                line_y += group_gap
         
         # 如果还有单词，需要新的一页
         if word_index < len(words):
@@ -82,7 +93,7 @@ def calculate_total_pages(text_content, font_size, letter_spacing, generate_mode
     
     return total_pages
 
-def calculate_word_index_for_page(page, text_content, font_size, letter_spacing, generate_mode):
+def calculate_word_index_for_page(page, text_content, font_size, letter_spacing, generate_mode, font_family='Arial'):
     """计算指定页的起始单词索引"""
     if not text_content or page == 0:
         return 0
@@ -113,6 +124,14 @@ def calculate_word_index_for_page(page, text_content, font_size, letter_spacing,
     text_left = 10  # 简化计算，不考虑position_x
     line_width = 760 - 30  # rect.width() - 30
     
+    # 创建字体对象，用于获取字体度量信息
+    font = QFont(font_family, font_size)
+    font_metrics = QFontMetrics(font)
+    
+    # 计算线的参数（使用四线三格的参数，因为它是默认值）
+    line_height = 40  # 每行的高度
+    group_gap = 40  # 组之间的间距
+    
     for p in range(page):
         line_y = 20  # rect.top() + 20
         page_height = 1091 - 100 - 100  # rect.height() - header_height - bottom_margin
@@ -120,7 +139,6 @@ def calculate_word_index_for_page(page, text_content, font_size, letter_spacing,
         while line_y < page_height and word_index < len(words):
             # 模拟一行能容纳多少单词
             x = text_left
-            words_in_line = 0
             
             while word_index < len(words):
                 word = words[word_index]
@@ -130,9 +148,11 @@ def calculate_word_index_for_page(page, text_content, font_size, letter_spacing,
                     word_index += 1
                     break
                 
-                # 估算单词宽度（简化计算）
-                word_width = len(word) * (font_size * 0.6) + letter_spacing * len(word)
-                space_width = font_size * 0.6 + letter_spacing
+                # 精确计算单词宽度，与draw_lines_and_text方法一致
+                word_width = 0
+                for char in word:
+                    word_width += font_metrics.horizontalAdvance(char) + letter_spacing
+                space_width = font_metrics.horizontalAdvance(' ') + letter_spacing
                 
                 # 如果当前行放不下这个单词，换行
                 if x + word_width > text_left + line_width and x > text_left:
@@ -141,21 +161,20 @@ def calculate_word_index_for_page(page, text_content, font_size, letter_spacing,
                 # 消耗这个单词
                 x += word_width + space_width
                 word_index += 1
-                words_in_line += 1
             
             # 移动到下一行
-            line_y += 40  # line_height
+            line_y += line_height
             
             # 模拟抄写模式
             if generate_mode == '抄写' or generate_mode == '描红+抄写':
                 # 抄写模式：添加组间距，然后绘制空白行
-                line_y += 40  # group_gap
+                line_y += group_gap
                 # 绘制空白行
-                line_y += 40  # line_height
+                line_y += line_height
                 # 移动到下一组
-                line_y += 40  # group_gap
+                line_y += group_gap
             else:
                 # 非抄写模式：直接添加组间距
-                line_y += 40  # group_gap
+                line_y += group_gap
     
     return word_index

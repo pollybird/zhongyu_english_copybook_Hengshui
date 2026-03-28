@@ -347,7 +347,8 @@ class CopybookTab(QWidget):
             self.text_content, 
             self.font_size, 
             self.letter_spacing, 
-            self.generate_mode
+            self.generate_mode,
+            self.font_family
         )
     
     def calculate_word_index_for_page(self, page):
@@ -357,7 +358,8 @@ class CopybookTab(QWidget):
             self.text_content, 
             self.font_size, 
             self.letter_spacing, 
-            self.generate_mode
+            self.generate_mode,
+            self.font_family
         )
     
     def prev_page(self):
@@ -1019,7 +1021,7 @@ class CopybookGenerator(QMainWindow):
         # 显示关于
         about_text = '''钟毓英语衡水体字帖生成器
 
-版本：1.0.0
+版本：1.1.1
 作者：泰州姜堰钟毓信息技术有限公司
 功能：生成英文字帖，支持多种模式和线格类型
 '''
@@ -1338,7 +1340,8 @@ class CopybookGenerator(QMainWindow):
             self.text_content, 
             self.font_size, 
             self.letter_spacing, 
-            self.generate_mode
+            self.generate_mode,
+            self.font_family
         )
     
     def calculate_word_index_for_page(self, page):
@@ -1348,7 +1351,8 @@ class CopybookGenerator(QMainWindow):
             self.text_content, 
             self.font_size, 
             self.letter_spacing, 
-            self.generate_mode
+            self.generate_mode,
+            self.font_family
         )
     
     def prev_page(self):
