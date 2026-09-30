@@ -1,0 +1,66 @@
+{
+  "name": "zhy-en-copybook-electron",
+  "version": "2.0.0",
+  "description": "钟毓英语衡水体字帖生成器（Electron 重构版）",
+  "main": "out/main/index.js",
+  "author": "泰州姜堰钟毓信息技术有限公司",
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "pack": "electron-vite build && electron-builder --dir",
+    "dist": "electron-vite build && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.3.0",
+    "vite": "^5.4.10"
+  },
+  "build": {
+    "appId": "cn.tzzhy.englishcopybook",
+    "productName": "钟毓英语衡水体字帖生成器",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/app_icon.png",
+        "to": "app_icon.png"
+      },
+      {
+        "from": "resources/copyright.txt",
+        "to": "copyright.txt"
+      },
+      {
+        "from": "resources/ocr-data",
+        "to": "ocr-data"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "resources/app_icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "fileAssociations": [
+      {
+        "ext": "zyecb",
+        "name": "钟毓英语字帖工程文件",
+        "description": "钟毓英语衡水体字帖工程文件",
+        "icon": "resources/app_icon.ico"
+      }
+    ]
+  },
+  "dependencies": {
+    "tesseract.js": "^7.0.0"
+  }
+}

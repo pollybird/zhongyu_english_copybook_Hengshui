@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:;"
+    />
+    <title>钟毓英语衡水体字帖生成器</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="tabbar">
+        <div class="tabs" id="tabs"></div>
+        <button class="tab-new" id="btn-new-tab" title="新建工程 (Ctrl+N)">＋</button>
+      </div>
+      <div class="workspace">
+        <aside class="sidebar">
+          <section class="panel">
+            <h3 class="panel-title">输入内容</h3>
+            <textarea id="inp-text" class="textarea" placeholder="请输入要生成字帖的英文内容..."></textarea>
+            <div class="ocr-row">
+              <button class="btn btn-default btn-sm" id="btn-ocr" title="截取屏幕区域并识别其中的文字">截图识别</button>
+              <select class="input ocr-lang" id="ocr-lang" title="OCR 识别语言">
+                <option value="eng">英文</option>
+                <option value="chi_sim">中文简体</option>
+                <option value="eng+chi_sim">英文+中文</option>
+              </select>
+            </div>
+            <div class="ocr-status" id="ocr-status" hidden></div>
+          </section>
+
+          <section class="panel">
+            <h3 class="panel-title">调整设置</h3>
+            <div class="grid2">
+              <label class="field-label" for="inp-font-size">字体大小:</label>
+              <input type="number" class="input" id="inp-font-size" min="10" max="50" step="1" />
+              <label class="field-label" for="inp-spacing">字间距:</label>
+              <input type="number" class="input" id="inp-spacing" min="-10" max="20" step="1" />
+              <label class="field-label" for="inp-x">X轴偏移:</label>
+              <input type="number" class="input" id="inp-x" min="-50" max="50" step="1" />
+              <label class="field-label" for="inp-y">Y轴偏移:</label>
+              <input type="number" class="input" id="inp-y" min="-50" max="50" step="1" />
+            </div>
+          </section>
+
+          <section class="panel">
+            <h3 class="panel-title">线格类型</h3>
+            <select class="input" id="inp-line-type">
+              <option>四线三格</option>
+              <option>单横线</option>
+            </select>
+          </section>
+
+          <section class="panel">
+            <h3 class="panel-title">生成模式</h3>
+            <select class="input" id="inp-mode">
+              <option>描红</option>
+              <option>抄写</option>
+              <option>描红+抄写</option>
+              <option>字帖</option>
+            </select>
+          </section>
+
+          <section class="panel">
+            <h3 class="panel-title">标题设置</h3>
+            <label class="field-label" for="inp-title">字帖标题:</label>
+            <input type="text" class="input" id="inp-title" />
+            <label class="checkbox">
+              <input type="checkbox" id="inp-page-number" />
+              <span>显示页码</span>
+            </label>
+          </section>
+
+          <section class="panel">
+            <h3 class="panel-title">自定义头部</h3>
+            <div class="header-actions">
+              <button class="btn btn-default btn-sm" id="btn-add-header">添加字段</button>
+              <button class="btn btn-default btn-sm" id="btn-remove-header">删除字段</button>
+            </div>
+            <ul class="header-list" id="header-list"></ul>
+          </section>
+        </aside>
+
+        <main class="preview-area">
+          <div class="preview-toolbar">
+            <div class="preview-title">预览效果</div>
+            <div class="pager">
+              <button class="btn btn-default pager-btn" id="btn-prev" title="上一页 (PageUp)">←</button>
+              <span class="page-label" id="page-label">第 1 页 / 共 1 页</span>
+              <button class="btn btn-default pager-btn" id="btn-next" title="下一页 (PageDown)">→</button>
+            </div>
+            <button class="btn btn-primary" id="btn-export">导出PDF</button>
+          </div>
+          <div class="preview-scroll" id="preview-scroll">
+            <div class="paper-wrap">
+              <canvas id="preview-canvas"></canvas>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

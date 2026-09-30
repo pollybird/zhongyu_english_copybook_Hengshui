@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
+    />
+    <title>PDF 导出</title>
+    <style>
+      @font-face {
+        font-family: 'HengshuiFont';
+        src: url('./src/assets/fonts/舒窈英文衡水体.ttf') format('truetype');
+        font-display: block;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        background: #fff;
+      }
+
+      /* 页面为标准 A4（210mm x 297mm），内部 800x1131 坐标的画布均匀缩放铺满 */
+      .pdf-page {
+        width: 210mm;
+        height: 297mm;
+        overflow: hidden;
+        background: #fff;
+        page-break-after: always;
+        break-after: page;
+        position: relative;
+      }
+
+      .pdf-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
+
+      .pdf-page canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="pages"></div>
+    <script type="module" src="./src/print.js"></script>
+  </body>
+</html>
