@@ -1,7 +1,7 @@
 {
   "name": "zhy-en-copybook-electron",
   "version": "2.0.0",
-  "description": "钟毓英语衡水体字帖生成器（Electron 重构版）",
+  "description": "钟毓英语衡水体字帖生成器",
   "main": "out/main/index.js",
   "author": "泰州姜堰钟毓信息技术有限公司",
   "license": "Apache-2.0",
@@ -50,6 +50,19 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "resources/app_icon.icns",
+      "category": "public.app-category.education",
+      "artifactName": "${name}-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage", "deb", "rpm"],
+      "icon": "resources/app_icon.png",
+      "category": "Education",
+      "maintainer": "泰州姜堰钟毓信息技术有限公司 <44961355+pollybird@users.noreply.github.com>",
+      "artifactName": "${name}-${version}-${arch}.${ext}"
     },
     "fileAssociations": [
       {
