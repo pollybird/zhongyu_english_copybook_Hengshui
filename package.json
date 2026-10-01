@@ -56,7 +56,7 @@
     },
     "linux": {
       "target": ["AppImage", "deb", "rpm"],
-      "icon": "resources/app_icon.png",
+      "icon": "resources/icons",
       "category": "Education",
       "maintainer": "泰州姜堰钟毓信息技术有限公司 <44961355+pollybird@users.noreply.github.com>",
       "artifactName": "${name}-${version}-${arch}.${ext}"
