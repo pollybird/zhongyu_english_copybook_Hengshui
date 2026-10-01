@@ -1,11 +1,20 @@
 import { ipcMain, desktopCapturer, screen, BrowserWindow, app } from 'electron'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { createWorker } from 'tesseract.js'
 
 let getMainWindow = null
 let selWindows = []
 const ocrWorkers = new Map()
+
+// 懒加载 tesseract.js，避免打包后主进程启动时模块初始化失败导致应用无法打开
+let createWorker = null
+async function getCreateWorker() {
+  if (!createWorker) {
+    const tesseract = await import('tesseract.js')
+    createWorker = tesseract.createWorker
+  }
+  return createWorker
+}
 
 // 语言数据目录：dev 为项目 resources，打包后在系统资源目录
 function resolveOcrDataDir() {
@@ -134,7 +143,8 @@ function cancelSelection() {
 // tesseract.js worker 按语言缓存（本地语言数据，离线可用）
 async function getWorker(lang) {
   if (ocrWorkers.has(lang)) return ocrWorkers.get(lang)
-  const worker = await createWorker(lang, 1, {
+  const _createWorker = await getCreateWorker()
+  const worker = await _createWorker(lang, 1, {
     langPath: resolveOcrDataDir(),
     cachePath: tmpdir(),
     logger: () => {}
