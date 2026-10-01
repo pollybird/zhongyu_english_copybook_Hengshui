@@ -26,13 +26,10 @@
     },
     "files": [
       "out/**/*",
-      "package.json"
+      "package.json",
+      "resources/app_icon.png"
     ],
     "extraResources": [
-      {
-        "from": "resources/app_icon.png",
-        "to": "app_icon.png"
-      },
       {
         "from": "resources/copyright.txt",
         "to": "copyright.txt"

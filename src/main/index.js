@@ -45,7 +45,9 @@ function resolvePreload() {
 }
 
 function resolveIcon() {
-  if (app.isPackaged) return join(process.resourcesPath, 'app_icon.png')
+  // 图标打包在 app.asar 内（app.asar/resources/app_icon.png），
+  // 避免作为 extraResources 与 hicolor 图标在 deb/rpm 中形成跨目录硬链接
+  if (app.isPackaged) return join(__dirname, '../../resources/app_icon.png')
   return join(process.cwd(), 'resources', 'app_icon.png')
 }
 
