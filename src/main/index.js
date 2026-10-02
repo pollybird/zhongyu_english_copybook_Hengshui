@@ -181,11 +181,9 @@ function sendMenuAction(id) {
   }
 }
 
-// Linux(GTK) 顶层菜单栏会把 Qt/Win 风格的 "(&X)" 整体从显示文本中剥离（但 Alt+X 助记符仍然生效），
-// 顶层采用 "文字(X)(&X)" 双写：显示 "(X)" 且保留快捷键；子菜单项只剥离 "&" 本身（字母保留并带下划线），
-// 用原生 "&X" 写法即可。Windows 原生显示无需处理
-const topMenuLabel = (text, key) =>
-  process.platform === 'linux' ? `${text}(${key})(&${key})` : `${text}(&${key})`
+// Electron 顶层菜单栏（Linux GTK 与 Windows 均如此）会把 "(&X)" 整体从显示文本剥离、仅注册助记符，
+// 故顶层采用 "文字(X)(&X)" 双写：显示 "(X)" 且保留 Alt 快捷键；子菜单项只剥离 "&" 本身（字母带下划线）
+const topMenuLabel = (text, key) => `${text}(${key})(&${key})`
 const itemLabel = (text, key, suffix = '') => `${text}(&${key})${suffix}`
 
 function buildMenu() {

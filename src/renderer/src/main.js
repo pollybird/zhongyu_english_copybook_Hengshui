@@ -30,7 +30,7 @@ const HELP_TEXT = `英文字帖生成器帮助
 
 const ABOUT_TEXT = `钟毓英语衡水体字帖生成器（Electron 版）
 
-版本：2.0.0
+版本：2.0.1
 作者：泰州姜堰钟毓信息技术有限公司
 官网：https://www.tzzhy.cn/
 功能：生成英文字帖，支持多种模式和线格类型`

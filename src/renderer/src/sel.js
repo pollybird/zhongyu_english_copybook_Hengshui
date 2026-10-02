@@ -7,6 +7,7 @@ const ctx = overlay.getContext('2d')
 
 let rect = null // {x, y, w, h} 当前选区（窗口 CSS 像素）
 let dragging = false
+let moved = false // 是否已拖拽出有效选区（区分点击与拖拽）
 let start = null
 let confirmed = false
 
@@ -45,6 +46,13 @@ function normRect() {
   return { x, y, width: Math.abs(rect.x - start.x), height: Math.abs(rect.y - start.y) }
 }
 
+// 判断点是否落在当前选区内（基于已归一化的选区）
+function pointInRect(p) {
+  if (!rect || !start) return false
+  const r = normRect()
+  return p.x >= r.x && p.x <= r.x + r.width && p.y >= r.y && p.y <= r.y + r.height
+}
+
 function pos(e) {
   return { x: e.clientX, y: e.clientY }
 }
@@ -62,8 +70,17 @@ window.addEventListener('keydown', (e) => {
 
 overlay.addEventListener('mousedown', (e) => {
   if (e.button !== 0) return
+  const p = pos(e)
+  // 若点击落在已有选区内：不重置选区（保留双击确认），仅记录起始点
+  if (rect && pointInRect(p)) {
+    dragging = false
+    moved = false
+    start = p
+    return
+  }
   dragging = true
-  start = pos(e)
+  moved = false
+  start = p
   rect = start
   hint.style.display = 'none'
   draw()
@@ -72,14 +89,16 @@ overlay.addEventListener('mousedown', (e) => {
 overlay.addEventListener('mousemove', (e) => {
   if (!dragging) return
   rect = pos(e)
+  const r = normRect()
+  if (r.width >= 8 || r.height >= 8) moved = true
   draw()
 })
 
 overlay.addEventListener('mouseup', () => {
   if (!dragging) return
   dragging = false
-  const r = normRect()
-  if (r.width < 8 || r.height < 8) {
+  // 未拖拽出有效选区视为普通点击，清空选区但保留双击确认的机会
+  if (!moved) {
     rect = null
     hint.style.display = ''
   }
@@ -87,6 +106,7 @@ overlay.addEventListener('mouseup', () => {
 })
 
 overlay.addEventListener('dblclick', () => {
+  // 双击确认：已有选区时直接用；单击未形成选区时双击无效
   if (rect) confirm()
 })
 
