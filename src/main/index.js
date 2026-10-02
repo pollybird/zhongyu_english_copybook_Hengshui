@@ -1,7 +1,48 @@
-import { app, BrowserWindow, Menu, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell, dialog } from 'electron'
 import { join } from 'path'
+import fs from 'fs'
 import { registerIpc, queueOpenFile } from './ipc'
 import { registerOcr } from './ocr'
+
+// ---------------- 启动诊断日志（写入用户数据目录，同步刷盘防崩溃丢失） ----------------
+let logFile = null
+try {
+  logFile = join(app.getPath('userData'), 'startup.log')
+} catch {
+  logFile = null
+}
+function bootLog(msg) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`
+  try {
+    if (logFile) fs.appendFileSync(logFile, line)
+  } catch {
+    /* 忽略日志自身错误 */
+  }
+}
+bootLog('==== 进程启动 ====')
+bootLog(
+  `platform=${process.platform} arch=${process.arch} electron=${process.versions.electron} ` +
+    `chrome=${process.versions.chrome} node=${process.versions.node} packaged=${app.isPackaged}`
+)
+bootLog(`argv=${JSON.stringify(process.argv)}`)
+bootLog(`__dirname=${__dirname}`)
+bootLog(`preload=${join(__dirname, '../preload/index.js')}`)
+bootLog(`iconPackaged=${join(__dirname, '../../resources/app_icon.png')}`)
+
+process.on('uncaughtException', (err) => {
+  bootLog(`!! uncaughtException: ${err && err.stack ? err.stack : err}`)
+  try {
+    dialog.showErrorBox('程序启动异常', `${err && err.message ? err.message : err}\n\n详细日志：\n${logFile || ''}`)
+  } catch {
+    /* 忽略 */
+  }
+})
+process.on('unhandledRejection', (reason) => {
+  bootLog(`!! unhandledRejection: ${reason && reason.stack ? reason.stack : reason}`)
+})
+app.on('child-process-gone', (_e, details) => {
+  bootLog(`!! child-process-gone: ${JSON.stringify(details)}`)
+})
 
 let mainWindow = null
 let readyToQuit = false
@@ -21,18 +62,26 @@ if (!gotLock) {
   })
 
   app.whenReady().then(() => {
-    registerIpc(() => mainWindow)
-    registerOcr(() => mainWindow, resolvePreload)
+    bootLog('app.whenReady 完成')
+    try {
+      registerIpc(() => mainWindow)
+      registerOcr(() => mainWindow, resolvePreload)
+      bootLog('IPC/OCR 注册完成')
 
-    // 启动参数中携带的工程文件
-    const launchFile = process.argv.find((a) => a.toLowerCase().endsWith('.zyecb'))
-    if (launchFile) queueOpenFile(launchFile)
+      // 启动参数中携带的工程文件
+      const launchFile = process.argv.find((a) => a.toLowerCase().endsWith('.zyecb'))
+      if (launchFile) queueOpenFile(launchFile)
 
-    createWindow()
+      createWindow()
+      bootLog('createWindow 返回')
 
-    app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow()
-    })
+      app.on('activate', () => {
+        if (BrowserWindow.getAllWindows().length === 0) createWindow()
+      })
+    } catch (err) {
+      bootLog(`!! whenReady 内异常: ${err && err.stack ? err.stack : err}`)
+      throw err
+    }
   })
 
   app.on('window-all-closed', () => {
@@ -52,6 +101,7 @@ function resolveIcon() {
 }
 
 function createWindow() {
+  bootLog('createWindow 开始')
   mainWindow = new BrowserWindow({
     width: 1000,
     height: 800,
@@ -67,18 +117,38 @@ function createWindow() {
       sandbox: false
     }
   })
+  bootLog('BrowserWindow 已创建')
+
+  // 渲染层诊断事件
+  mainWindow.webContents.on('did-finish-load', () => bootLog('渲染页面 did-finish-load'))
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    bootLog(`!! did-fail-load code=${code} desc=${desc} url=${url}`)
+  })
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    bootLog(`!! render-process-gone: ${JSON.stringify(details)}`)
+  })
+  mainWindow.webContents.on('preload-error', (_e, preloadPath, err) => {
+    bootLog(`!! preload-error path=${preloadPath} err=${err && err.stack ? err.stack : err}`)
+  })
+  mainWindow.webContents.on('console-message', (_e, level, message) => {
+    if (level >= 2) bootLog(`renderer[${level}] ${message}`)
+  })
 
   // 与原版一致：启动后最大化
   mainWindow.maximize()
 
   const rendererUrl = process.env.ELECTRON_RENDERER_URL
   if (rendererUrl) {
+    bootLog(`loadURL: ${rendererUrl}`)
     mainWindow.loadURL(rendererUrl)
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    const page = join(__dirname, '../renderer/index.html')
+    bootLog(`loadFile: ${page}`)
+    mainWindow.loadFile(page).catch((err) => bootLog(`!! loadFile 失败: ${err && err.stack ? err.stack : err}`))
   }
 
   buildMenu()
+  bootLog('菜单构建完成')
 
   // 关闭前让渲染进程逐一确认未保存的标签页
   mainWindow.on('close', (event) => {
