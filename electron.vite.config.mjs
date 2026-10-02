@@ -14,6 +14,7 @@ export default defineConfig({
         input: {
           index: resolve('src/renderer/index.html'),
           print: resolve('src/renderer/print.html'),
+          preview: resolve('src/renderer/preview.html'),
           sel: resolve('src/renderer/sel.html')
         }
       }

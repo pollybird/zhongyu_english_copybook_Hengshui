@@ -26,15 +26,17 @@ contextBridge.exposeInMainWorld('api', {
   readFile: (filePath) => ipcRenderer.invoke('file:read', filePath),
   writeFile: (filePath, bytes) => ipcRenderer.invoke('file:write', { filePath, bytes }),
 
-  // PDF 导出（隐藏打印窗口）
+  // PDF 导出 / 打印（隐藏打印窗口）
   exportPdf: (filePath, data) => ipcRenderer.invoke('pdf:export', { filePath, data }),
+  printJob: (data, mode) => ipcRenderer.invoke(mode === 'preview' ? 'print:preview' : 'print:direct', data),
 
-  // 打印窗口专用通道
-  onPdfData: (callback) => {
+  // 打印渲染窗口专用通道（print.html / preview.html）
+  onPrintData: (callback) => {
     const handler = (_event, data) => callback(data)
-    ipcRenderer.on('pdf:data', handler)
+    ipcRenderer.on('print:data', handler)
   },
-  pdfRendered: () => ipcRenderer.send('pdf:rendered'),
+  printRendered: () => ipcRenderer.send('print:rendered'),
+  previewPrint: () => ipcRenderer.send('print:preview-print'),
 
   // 截图 OCR（主窗口）
   startOcrCapture: () => ipcRenderer.send('ocr:start-capture'),

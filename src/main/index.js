@@ -21,7 +21,7 @@ if (!gotLock) {
   })
 
   app.whenReady().then(() => {
-    registerIpc(() => mainWindow)
+    registerIpc(() => mainWindow, resolveIcon)
     registerOcr(() => mainWindow, resolvePreload)
 
     // 启动参数中携带的工程文件
@@ -130,6 +130,12 @@ function buildMenu() {
           click: () => sendMenuAction('saveAs')
         },
         { type: 'separator' },
+        {
+          label: itemLabel('打印', 'P', '...'),
+          accelerator: 'CmdOrCtrl+P',
+          click: () => sendMenuAction('print')
+        },
+        { label: itemLabel('打印预览', 'V', '...'), click: () => sendMenuAction('printPreview') },
         {
           label: itemLabel('导出PDF', 'E', '...'),
           accelerator: 'CmdOrCtrl+F',

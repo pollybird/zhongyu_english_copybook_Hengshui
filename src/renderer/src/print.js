@@ -1,14 +1,14 @@
 import { buildPages, renderPage, PAGE_W, PAGE_H } from './engine/copybook.js'
 
 /**
- * PDF 隐藏打印窗口：
- * 接收主进程转发的工程数据 -> 按 A4 2 倍分辨率渲染所有页 -> 通知主进程 printToPDF
+ * 打印渲染窗口：
+ * 接收主进程转发的工程数据 -> 按 A4 2 倍分辨率渲染所有页 -> 通知主进程（printToPDF / print）
  */
 
 // 打印采用 192DPI（2x），保证印刷清晰
 const PRINT_DPR = 2
 
-window.api.onPdfData(async (settings) => {
+window.api.onPrintData(async (settings) => {
   try {
     await Promise.all([
       document.fonts.load('24px "HengshuiFont"'),
@@ -39,7 +39,7 @@ window.api.onPdfData(async (settings) => {
     )
     await document.fonts.ready
 
-    window.api.pdfRendered()
+    window.api.printRendered()
   } catch (err) {
     console.error('PDF 页面渲染失败', err)
   }

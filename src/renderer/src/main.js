@@ -25,12 +25,13 @@ const HELP_TEXT = `英文字帖生成器帮助
   Ctrl+O        打开工程
   Ctrl+S        保存工程
   Ctrl+Shift+S  另存为
+  Ctrl+P        打印
   Ctrl+F        导出PDF
   PageUp/PageDown 预览翻页`
 
 const ABOUT_TEXT = `钟毓英语衡水体字帖生成器（Electron 版）
 
-版本：2.0.1
+版本：2.0.2
 作者：泰州姜堰钟毓信息技术有限公司
 官网：https://www.tzzhy.cn/
 功能：生成英文字帖，支持多种模式和线格类型`
@@ -417,6 +418,26 @@ async function exportPdf() {
   }
 }
 
+// 直接打印 / 打印预览（无需先导出 PDF，与导出共用同一渲染管线）
+async function printJob(preview) {
+  const tab = activeTab
+  if (!tab) return
+  try {
+    await document.fonts.ready
+    if (preview) {
+      await window.api.printJob(tab.state, 'preview')
+      return
+    }
+    const { ok, reason } = await window.api.printJob(tab.state, 'direct')
+    // 用户在打印对话框取消时静默返回
+    if (!ok && !/cancel/i.test(reason)) {
+      await showAlert('打印失败', `打印未完成: ${reason || '未知错误'}`)
+    }
+  } catch (err) {
+    await showAlert(preview ? '打开预览失败' : '打印失败', `${err.message || err}`)
+  }
+}
+
 // ---------------- 关闭确认 ----------------
 async function canCloseAll() {
   const modified = tabs.filter((t) => t.modified)
@@ -449,6 +470,12 @@ function bindMenu() {
         break
       case 'exportPdf':
         exportPdf()
+        break
+      case 'print':
+        printJob(false)
+        break
+      case 'printPreview':
+        printJob(true)
         break
       case 'help':
         showTextPage('帮助', HELP_TEXT)
