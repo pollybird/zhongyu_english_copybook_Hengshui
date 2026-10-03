@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" id="docroot">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,12 +7,12 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"
     />
-    <title>截图识别</title>
+    <title data-i18n="sel.title">截图识别</title>
   </head>
   <body>
     <img id="frozen" alt="" />
     <canvas id="overlay"></canvas>
-    <div id="hint">拖拽框选要识别的文字区域，Enter / 双击确认，Esc 取消</div>
+    <div id="hint" data-i18n="sel.hint">拖拽框选要识别的文字区域，Enter / 双击确认，Esc 取消</div>
     <script type="module" src="./src/sel.js"></script>
   </body>
 </html>

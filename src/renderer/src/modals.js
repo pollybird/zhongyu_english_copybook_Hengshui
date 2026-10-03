@@ -1,5 +1,11 @@
 /** 轻量模态对话框（Electron 渲染进程不支持 window.prompt，统一自绘） */
 
+// 由主界面启动时注入翻译函数（默认恒等，保证独立使用时不崩）
+let t = (key) => key
+export function setModalI18n(translator) {
+  t = translator
+}
+
 function ensureRoot() {
   let root = document.getElementById('modal-root')
   if (root) return root
@@ -45,7 +51,7 @@ export function showAlert(title, message) {
     const actions = overlay.querySelector('.modal-actions')
     const ok = document.createElement('button')
     ok.className = 'btn btn-primary'
-    ok.textContent = '确定'
+    ok.textContent = t('btn.ok')
     actions.appendChild(ok)
     ok.focus()
     const done = () => {
@@ -79,9 +85,9 @@ export function showQuestion(title, message) {
       actions.appendChild(btn)
       return btn
     }
-    const cancel = make('取消', 'btn-default', 'cancel')
-    make('不保存', 'btn-default', 'discard')
-    const save = make('保存', 'btn-primary', 'save')
+    const cancel = make(t('btn.cancel'), 'btn-default', 'cancel')
+    make(t('btn.discard'), 'btn-default', 'discard')
+    const save = make(t('btn.save'), 'btn-primary', 'save')
     save.focus()
     overlay.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') cancel.click()
@@ -112,11 +118,11 @@ export function showPrompt(title, label, defaultValue = '') {
     }
     const cancelBtn = document.createElement('button')
     cancelBtn.className = 'btn btn-default'
-    cancelBtn.textContent = '取消'
+    cancelBtn.textContent = t('btn.cancel')
     cancelBtn.onclick = () => finish(null)
     const okBtn = document.createElement('button')
     okBtn.className = 'btn btn-primary'
-    okBtn.textContent = '确定'
+    okBtn.textContent = t('btn.ok')
     okBtn.onclick = () => finish(input.value.trim())
     actions.append(cancelBtn, okBtn)
 
@@ -139,7 +145,7 @@ export function showTextPage(title, text, mono = false) {
   const actions = overlay.querySelector('.modal-actions')
   const ok = document.createElement('button')
   ok.className = 'btn btn-primary'
-  ok.textContent = '确定'
+  ok.textContent = t('btn.ok')
   ok.onclick = () => closeModal(overlay)
   actions.appendChild(ok)
   ok.focus()

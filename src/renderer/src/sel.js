@@ -1,4 +1,16 @@
 import './sel.css'
+import { createT, getLang } from '../../shared/i18n.js'
+
+// 界面语言随系统（zh* 中文，其余英文）
+window.api.getLocale().then((locale) => {
+  const lang = getLang(locale)
+  const t = createT(locale)
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
+  document.title = t('sel.title')
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.dataset.i18n)
+  })
+})
 
 const frozen = document.getElementById('frozen')
 const overlay = document.getElementById('overlay')

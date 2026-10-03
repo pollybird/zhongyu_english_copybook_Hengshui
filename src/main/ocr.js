@@ -5,6 +5,7 @@ import { tmpdir } from 'os'
 let getMainWindow = null
 let selWindows = []
 const ocrWorkers = new Map()
+let translator = (key) => key
 
 // 懒加载 tesseract.js，避免打包后主进程启动时模块初始化失败导致应用无法打开
 let createWorker = null
@@ -23,7 +24,8 @@ function resolveOcrDataDir() {
     : join(process.cwd(), 'resources', 'ocr-data')
 }
 
-export function registerOcr(getWin, resolvePreload) {
+export function registerOcr(getWin, resolvePreload, t) {
+  translator = t
   getMainWindow = getWin
   ipcMain.on('ocr:start-capture', () => startCapture(resolvePreload))
   ipcMain.on('ocr:region-selected', (_e, dataUrl) => finishSelection(dataUrl))
@@ -61,7 +63,7 @@ async function startCapture(resolvePreload) {
       height: Math.round(Math.max(...displays.map((d) => d.size.height)) * maxScale)
     }
     const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: thumbSize })
-    if (!sources.length) throw new Error('无法获取屏幕画面')
+    if (!sources.length) throw new Error(translator('err.captureFailed'))
 
     for (const display of displays) {
       const source =
@@ -155,7 +157,7 @@ async function getWorker(lang) {
 
 async function recognize(dataUrl, lang) {
   const base64 = String(dataUrl).split(',')[1]
-  if (!base64) throw new Error('无效的图像数据')
+  if (!base64) throw new Error(translator('err.invalidImage'))
   const buffer = Buffer.from(base64, 'base64')
   const worker = await getWorker(lang || 'eng')
   const { data } = await worker.recognize(buffer)

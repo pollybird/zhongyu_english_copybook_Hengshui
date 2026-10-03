@@ -6,35 +6,14 @@ import {
   serializeProject,
   parseProject
 } from './engine/zyecb-format.js'
-import { showAlert, showQuestion, showPrompt, showTextPage } from './modals.js'
-import agreementText from './assets/agreement.txt?raw'
+import { showAlert, showQuestion, showPrompt, showTextPage, setModalI18n } from './modals.js'
+import { createT, getLang, getDefaultDoc } from '../../shared/i18n.js'
+import agreementZh from './assets/agreement.txt?raw'
+import agreementEn from './assets/agreement.en.txt?raw'
 
-const APP_NAME = '钟毓英语衡水体字帖生成器'
-const HELP_TEXT = `英文字帖生成器帮助
-
-1. 在左侧文本框中输入要生成字帖的英文内容
-2. 设置字体大小、字间距、位置偏移等参数
-3. 选择线格类型（四线三格或单横线）
-4. 选择生成模式（描红、抄写、描红+抄写、字帖）
-5. 点击保存工程可以保存当前设置
-6. 点击加载工程可以加载之前保存的设置
-7. 点击导出PDF可以将字帖导出为PDF文件
-
-快捷键：
-  Ctrl+N        新建工程
-  Ctrl+O        打开工程
-  Ctrl+S        保存工程
-  Ctrl+Shift+S  另存为
-  Ctrl+P        打印
-  Ctrl+F        导出PDF
-  PageUp/PageDown 预览翻页`
-
-const ABOUT_TEXT = `钟毓英语衡水体字帖生成器（Electron 版）
-
-版本：2.0.2
-作者：泰州姜堰钟毓信息技术有限公司
-官网：https://www.tzzhy.cn/
-功能：生成英文字帖，支持多种模式和线格类型`
+// 界面语言：启动时从主进程取系统 locale（zh* 中文，其余英文兜底）
+let lang = 'zh'
+let t = (key) => key
 
 // ---------------- DOM ----------------
 const $ = (id) => document.getElementById(id)
@@ -70,8 +49,11 @@ let tabSeq = 0
 let syncing = false
 let previewQueued = false
 
+// 新工程默认值：line_type/generate_mode 始终为文件格式中文枚举；
+// title/custom_headers 是打印在纸上的文档内容，随界面语言给默认值
 function cloneDefaults() {
-  return structuredClone(DEFAULT_SETTINGS)
+  const s = structuredClone(DEFAULT_SETTINGS)
+  return { ...s, ...getDefaultDoc(lang) }
 }
 
 function createTab(state = null) {
@@ -92,10 +74,10 @@ function basename(p) {
 }
 
 function untitledName() {
-  let name = 'Untitled'
+  let name = t('ui.untitled')
   let counter = 1
-  while (tabs.some((t) => tabDisplayName(t) === name)) {
-    name = `Untitled${counter++}`
+  while (tabs.some((tab) => tabDisplayName(tab) === name)) {
+    name = `${t('ui.untitled')}${counter++}`
   }
   return name
 }
@@ -107,7 +89,7 @@ function tabDisplayName(tab) {
 
 // 未保存标签的固定名称（创建时确定，与原版递增逻辑一致）
 function untitledNameFor(tab) {
-  return tab.untitled || 'Untitled'
+  return tab.untitled || t('ui.untitled')
 }
 
 // ---------------- 标签栏渲染 ----------------
@@ -125,7 +107,7 @@ function renderTabs() {
     const close = document.createElement('button')
     close.className = 'tab-close'
     close.textContent = '×'
-    close.title = '关闭标签'
+    close.title = t('ui.closeTab')
     close.onclick = (e) => {
       e.stopPropagation()
       closeTab(tab)
@@ -149,7 +131,7 @@ function activateTab(tab) {
 
 async function closeTab(tab) {
   if (tab.modified) {
-    const answer = await showQuestion('保存提示', '当前工程未保存，是否保存？')
+    const answer = await showQuestion(t('msg.saveQuestionTitle'), t('msg.saveQuestion'))
     if (answer === 'cancel') return
     if (answer === 'save') {
       if (!(await saveTab(tab))) return
@@ -170,10 +152,10 @@ async function closeTab(tab) {
 
 function syncWindowTitle() {
   if (!activeTab) {
-    window.api.setTitle(APP_NAME)
+    window.api.setTitle(t('appName'))
     return
   }
-  window.api.setTitle(`${APP_NAME} - ${tabDisplayName(activeTab)}`)
+  window.api.setTitle(`${t('appName')} - ${tabDisplayName(activeTab)}`)
 }
 
 // ---------------- 表单同步 ----------------
@@ -260,10 +242,10 @@ function renderHeaders() {
 
 async function addHeader() {
   if (activeTab.state.custom_headers.length >= 3) {
-    await showAlert('添加字段失败', '自定义字段最多只能有3个！')
+    await showAlert(t('msg.addFieldFailTitle'), t('msg.addFieldMax'))
     return
   }
-  const name = await showPrompt('添加字段', '请输入字段名称:')
+  const name = await showPrompt(t('msg.addFieldTitle'), t('msg.addFieldLabel'))
   if (name) {
     activeTab.state.custom_headers.push(name)
     markModified()
@@ -292,7 +274,7 @@ function renderPreview() {
     els.canvas.width = 800
     els.canvas.height = 1131
     ctx.clearRect(0, 0, 800, 1131)
-    els.pageLabel.textContent = '第 0 页 / 共 0 页'
+    els.pageLabel.textContent = t('ui.pageOf', { current: 0, total: 0 })
     els.prev.disabled = true
     els.next.disabled = true
     return
@@ -307,7 +289,10 @@ function renderPreview() {
     activeTab.currentPage = totalPages - 1
     drawPageToCanvas(els.canvas, activeTab.state, activeTab.currentPage, dpr())
   }
-  els.pageLabel.textContent = `第 ${activeTab.currentPage + 1} 页 / 共 ${totalPages} 页`
+  els.pageLabel.textContent = t('ui.pageOf', {
+    current: activeTab.currentPage + 1,
+    total: totalPages
+  })
   els.prev.disabled = activeTab.currentPage <= 0
   els.next.disabled = activeTab.currentPage >= totalPages - 1
 }
@@ -376,7 +361,7 @@ async function loadFromPath(filePath) {
     renderTabs()
     schedulePreview()
   } catch (err) {
-    await showAlert('加载失败', `加载工程文件失败: ${err.message || err}`)
+    await showAlert(t('msg.loadFailTitle'), t('msg.loadFail', { detail: err.message || err }))
   }
 }
 
@@ -394,7 +379,7 @@ async function saveTab(tab, saveAs = false) {
     else syncWindowTitle()
     return true
   } catch (err) {
-    await showAlert('保存失败', `保存工程文件失败: ${err.message || err}`)
+    await showAlert(t('msg.saveFailTitle'), t('msg.saveFail', { detail: err.message || err }))
     return false
   }
 }
@@ -412,9 +397,9 @@ async function exportPdf() {
   try {
     await document.fonts.ready
     await window.api.exportPdf(filePath, tab.state)
-    await showAlert('导出成功', 'PDF文件导出成功！')
+    await showAlert(t('msg.exportOkTitle'), t('msg.exportOk'))
   } catch (err) {
-    await showAlert('导出失败', `导出PDF失败: ${err.message || err}`)
+    await showAlert(t('msg.exportFailTitle'), t('msg.exportFail', { detail: err.message || err }))
   }
 }
 
@@ -431,10 +416,16 @@ async function printJob(preview) {
     const { ok, reason } = await window.api.printJob(tab.state, 'direct')
     // 用户在打印对话框取消时静默返回
     if (!ok && !/cancel/i.test(reason)) {
-      await showAlert('打印失败', `打印未完成: ${reason || '未知错误'}`)
+      await showAlert(
+        t('msg.printFailTitle'),
+        t('msg.printIncomplete', { detail: reason || t('msg.printUnknown') })
+      )
     }
   } catch (err) {
-    await showAlert(preview ? '打开预览失败' : '打印失败', `${err.message || err}`)
+    await showAlert(
+      preview ? t('msg.previewFailTitle') : t('msg.printFailTitle'),
+      `${err.message || err}`
+    )
   }
 }
 
@@ -443,7 +434,7 @@ async function canCloseAll() {
   const modified = tabs.filter((t) => t.modified)
   for (let i = modified.length - 1; i >= 0; i--) {
     const tab = modified[i]
-    const answer = await showQuestion('保存提示', '当前工程未保存，是否保存？')
+    const answer = await showQuestion(t('msg.saveQuestionTitle'), t('msg.saveQuestion'))
     if (answer === 'cancel') return false
     if (answer === 'save') {
       if (!(await saveTab(tab))) return false
@@ -478,13 +469,13 @@ function bindMenu() {
         printJob(true)
         break
       case 'help':
-        showTextPage('帮助', HELP_TEXT)
+        showTextPage(t('msg.helpTitle'), t('help'))
         break
       case 'agreement':
-        showTextPage('用户协议', agreementText, true)
+        showTextPage(t('msg.agreementTitle'), lang === 'zh' ? agreementZh : agreementEn, true)
         break
       case 'about':
-        showTextPage('关于', ABOUT_TEXT)
+        showTextPage(t('msg.aboutTitle'), t('about'))
         break
     }
   })
@@ -507,7 +498,7 @@ function bindOcr() {
   els.ocr.onclick = () => {
     els.ocr.disabled = true
     els.ocrStatus.hidden = false
-    els.ocrStatus.textContent = '请拖拽框选要识别的文字区域（Esc 取消）'
+    els.ocrStatus.textContent = t('msg.ocrSelecting')
     window.api.startOcrCapture()
   }
 
@@ -517,32 +508,53 @@ function bindOcr() {
       els.ocrStatus.hidden = true
       return
     }
-    els.ocrStatus.textContent = '正在识别文字...'
+    els.ocrStatus.textContent = t('msg.ocrRecognizing')
     try {
       const text = await window.api.ocrRecognize(dataUrl, els.ocrLang.value)
       const clean = (text || '').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim()
       if (!clean) {
         els.ocrStatus.hidden = true
-        await showAlert('识别结果', '未识别到文字，请重试或调整识别区域。')
+        await showAlert(t('msg.ocrEmptyTitle'), t('msg.ocrEmpty'))
         return
       }
       // 通过 insertText 写入，保留原生撤销并自动触发 input 事件（同步状态与预览）
       els.text.focus()
       els.text.select()
       document.execCommand('insertText', false, clean)
-      els.ocrStatus.textContent = `识别完成，已填入 ${clean.length} 个字符`
+      els.ocrStatus.textContent = t('msg.ocrDone', { n: clean.length })
       setTimeout(() => {
         els.ocrStatus.hidden = true
       }, 2500)
     } catch (err) {
       els.ocrStatus.hidden = true
-      await showAlert('识别失败', `OCR识别失败: ${err.message || err}`)
+      await showAlert(t('msg.ocrFailTitle'), t('msg.ocrFail', { detail: err.message || err }))
     }
+  })
+}
+
+// ---------------- 静态文案应用 ----------------
+function applyStaticI18n() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.dataset.i18n)
+  })
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    el.title = t(el.dataset.i18nTitle)
+  })
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder)
   })
 }
 
 // ---------------- 启动 ----------------
 async function init() {
+  // 先确定界面语言（zh* 中文，其余英文兜底）
+  const locale = await window.api.getLocale()
+  lang = getLang(locale)
+  t = createT(locale)
+  setModalI18n(t)
+  applyStaticI18n()
+
   bindInputs()
   bindOcr()
   els.newTab.onclick = () => newProject()

@@ -1,10 +1,14 @@
 import { buildPages, renderPage, PAGE_W, PAGE_H } from './engine/copybook.js'
+import { createT, getLang } from '../../shared/i18n.js'
 
 /**
  * 打印预览窗口：
  * 接收主进程转发的工程数据 -> 按 A4 2 倍分辨率渲染所有页 -> 通知主进程显示窗口
  * 支持缩放（适应页宽 / 40%~200%）、页码跟随滚动，可直接弹出系统打印对话框
  */
+
+let lang = 'zh'
+let t = (key) => key
 
 // 渲染分辨率与打印/导出一致（2x = 192DPI）
 const PRINT_DPR = 2
@@ -42,11 +46,30 @@ function updateIndicator() {
     const top = page.getBoundingClientRect().top - scrollTop + scroll.scrollTop
     if (top <= center) current = i + 1
   })
-  pageIndicator.textContent = `第 ${current} / ${totalPages} 页`
+  pageIndicator.textContent = t('preview.page', { current, total: totalPages })
 }
+
+function applyStaticI18n() {
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.textContent = t(el.dataset.i18n)
+  })
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    el.title = t(el.dataset.i18nTitle)
+  })
+  document.title = t('preview.title')
+}
+
+// 先拿到系统语言再渲染，保证页码等动态文案首帧即正确
+const localeReady = window.api.getLocale().then((locale) => {
+  lang = getLang(locale)
+  t = createT(locale)
+  applyStaticI18n()
+})
 
 window.api.onPrintData(async (settings) => {
   try {
+    await localeReady
     await Promise.all([
       document.fonts.load('24px "HengshuiFont"'),
       document.fonts.load('bold 24px "HengshuiFont"'),

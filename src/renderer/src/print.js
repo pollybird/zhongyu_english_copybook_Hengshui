@@ -1,4 +1,10 @@
 import { buildPages, renderPage, PAGE_W, PAGE_H } from './engine/copybook.js'
+import { createT } from '../../shared/i18n.js'
+
+// 隐藏渲染窗口无可见界面，仅同步文档标题语言
+window.api.getLocale().then((locale) => {
+  document.title = createT(locale)('print.title')
+})
 
 /**
  * 打印渲染窗口：

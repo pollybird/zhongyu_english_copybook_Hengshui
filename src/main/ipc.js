@@ -2,9 +2,6 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { join } from 'path'
 import fs from 'fs'
 
-const ZYECB_FILTER = [{ name: '字帖工程文件', extensions: ['zyecb'] }]
-const PDF_FILTER = [{ name: 'PDF文件', extensions: ['pdf'] }]
-
 function documentsPath() {
   return app.getPath('documents')
 }
@@ -19,11 +16,11 @@ const PRINT_OPTIONS = {
 /**
  * 等待渲染窗口（print.html / preview.html）完成页面渲染
  */
-function waitForRender(win) {
+function waitForRender(win, t) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       cleanup()
-      reject(new Error('页面渲染超时'))
+      reject(new Error(t('err.renderTimeout')))
     }, 30000)
     const onRendered = (event) => {
       if (event.sender.id !== win.webContents.id) return
@@ -48,7 +45,7 @@ function loadRendererPage(win, page) {
 /**
  * 创建隐藏窗口渲染全部字帖页面（PDF 导出与直接打印共用），渲染完成后返回窗口
  */
-async function createRenderWindow(data) {
+async function createRenderWindow(data, t) {
   const win = new BrowserWindow({
     show: false,
     width: 900,
@@ -60,7 +57,7 @@ async function createRenderWindow(data) {
       sandbox: false
     }
   })
-  const rendered = waitForRender(win)
+  const rendered = waitForRender(win, t)
   await loadRendererPage(win, 'print.html')
   win.webContents.send('print:data', data)
   await rendered
@@ -71,8 +68,9 @@ async function createRenderWindow(data) {
  * 注册主进程 IPC 处理器
  * @param {() => BrowserWindow} getMainWindow
  * @param {() => Electron.NativeImage} resolveIcon
+ * @param {(key: string, vars?: object) => string} t 国际化翻译函数
  */
-export function registerIpc(getMainWindow, resolveIcon) {
+export function registerIpc(getMainWindow, resolveIcon, t) {
   // 打印预览窗口（单例）
   let previewWin = null
   // 渲染进程启动完毕，取走待打开的工程文件
@@ -99,8 +97,8 @@ export function registerIpc(getMainWindow, resolveIcon) {
   ipcMain.handle('dialog:open-project', async () => {
     const win = getMainWindow()
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-      title: '加载工程',
-      filters: ZYECB_FILTER,
+      title: t('dlg.openTitle'),
+      filters: [{ name: t('dlg.projectFilter'), extensions: ['zyecb'] }],
       properties: ['openFile']
     })
     if (canceled || filePaths.length === 0) return null
@@ -110,9 +108,9 @@ export function registerIpc(getMainWindow, resolveIcon) {
   ipcMain.handle('dialog:save-project', async (_event, defaultPath) => {
     const win = getMainWindow()
     const { canceled, filePath } = await dialog.showSaveDialog(win, {
-      title: '保存工程',
+      title: t('dlg.saveTitle'),
       defaultPath: defaultPath || join(documentsPath(), 'Untitled.zyecb'),
-      filters: ZYECB_FILTER
+      filters: [{ name: t('dlg.projectFilter'), extensions: ['zyecb'] }]
     })
     if (canceled || !filePath) return null
     return filePath.endsWith('.zyecb') ? filePath : filePath + '.zyecb'
@@ -121,9 +119,9 @@ export function registerIpc(getMainWindow, resolveIcon) {
   ipcMain.handle('dialog:save-pdf', async (_event, defaultPath) => {
     const win = getMainWindow()
     const { canceled, filePath } = await dialog.showSaveDialog(win, {
-      title: '导出PDF',
-      defaultPath: defaultPath || join(documentsPath(), '英文字帖.pdf'),
-      filters: PDF_FILTER
+      title: t('dlg.pdfTitle'),
+      defaultPath: defaultPath || join(documentsPath(), `${t('dlg.defaultPdfName')}.pdf`),
+      filters: [{ name: t('dlg.pdfFilter'), extensions: ['pdf'] }]
     })
     if (canceled || !filePath) return null
     return filePath.endsWith('.pdf') ? filePath : filePath + '.pdf'
@@ -143,7 +141,7 @@ export function registerIpc(getMainWindow, resolveIcon) {
 
   // PDF 导出：在隐藏窗口中渲染全部页面，再 printToPDF
   ipcMain.handle('pdf:export', async (_event, { filePath, data }) => {
-    const pdfWin = await createRenderWindow(data)
+    const pdfWin = await createRenderWindow(data, t)
     try {
       const pdf = await pdfWin.webContents.printToPDF({
         landscape: false,
@@ -158,7 +156,7 @@ export function registerIpc(getMainWindow, resolveIcon) {
 
   // 直接打印：隐藏窗口渲染全部页面后弹出系统打印对话框
   ipcMain.handle('print:direct', async (_event, data) => {
-    const win = await createRenderWindow(data)
+    const win = await createRenderWindow(data, t)
     return new Promise((resolve) => {
       win.webContents.print({ silent: false, ...PRINT_OPTIONS }, (success, failureReason) => {
         win.close()
@@ -171,7 +169,7 @@ export function registerIpc(getMainWindow, resolveIcon) {
   ipcMain.handle('print:preview', async (_event, data) => {
     if (previewWin && !previewWin.isDestroyed()) {
       previewWin.focus()
-      const rendered = waitForRender(previewWin)
+      const rendered = waitForRender(previewWin, t)
       previewWin.webContents.send('print:data', data)
       await rendered
       return true
@@ -182,7 +180,7 @@ export function registerIpc(getMainWindow, resolveIcon) {
       minWidth: 760,
       minHeight: 600,
       show: false,
-      title: '打印预览',
+      title: t('preview.title'),
       icon: resolveIcon ? resolveIcon() : undefined,
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
@@ -196,7 +194,7 @@ export function registerIpc(getMainWindow, resolveIcon) {
     })
     // 预览窗口不需要应用菜单（macOS 菜单在顶部栏，无需处理）
     if (process.platform !== 'darwin') previewWin.setMenu(null)
-    const rendered = waitForRender(previewWin)
+    const rendered = waitForRender(previewWin, t)
     await loadRendererPage(previewWin, 'preview.html')
     previewWin.webContents.send('print:data', data)
     await rendered

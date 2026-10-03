@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" id="docroot">
   <head>
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:;"
     />
-    <title>打印预览</title>
+    <title data-i18n="preview.title">打印预览</title>
     <style>
       @font-face {
         font-family: 'HengshuiFont';
@@ -136,12 +136,12 @@
   </head>
   <body>
     <div id="toolbar">
-      <button id="btn-print">打印</button>
+      <button id="btn-print" data-i18n="preview.print">打印</button>
       <div class="group">
-        <button id="zoom-out" title="缩小">−</button>
+        <button id="zoom-out" data-i18n-title="preview.zoomOut" title="缩小">−</button>
         <span id="zoom-label">100%</span>
-        <button id="zoom-in" title="放大">＋</button>
-        <button id="zoom-fit">适应页宽</button>
+        <button id="zoom-in" data-i18n-title="preview.zoomIn" title="放大">＋</button>
+        <button id="zoom-fit" data-i18n="preview.fitWidth">适应页宽</button>
       </div>
       <span id="page-indicator"></span>
     </div>

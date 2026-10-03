@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('api', {
+  // 界面语言（系统 locale，如 zh-CN / en-US）
+  getLocale: () => ipcRenderer.invoke('app:get-locale'),
+
   // 菜单动作
   onMenuAction: (callback) => {
     const handler = (_event, id) => callback(id)

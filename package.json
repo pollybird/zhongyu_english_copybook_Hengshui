@@ -1,6 +1,6 @@
 {
   "name": "zhy-en-copybook-electron",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "钟毓英语衡水体字帖生成器",
   "main": "out/main/index.js",
   "author": "泰州姜堰钟毓信息技术有限公司",

@@ -1,7 +1,11 @@
-import { app, BrowserWindow, Menu, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell, ipcMain } from 'electron'
 import { join } from 'path'
 import { registerIpc, queueOpenFile } from './ipc'
 import { registerOcr } from './ocr'
+import { createT, isZhLocale } from '../shared/i18n.js'
+
+// 系统语言：zh* 用中文，其余语言一律英文兜底（app.getLocale 在 ready 后可用）
+let t = (key) => key
 
 let mainWindow = null
 let readyToQuit = false
@@ -21,8 +25,12 @@ if (!gotLock) {
   })
 
   app.whenReady().then(() => {
-    registerIpc(() => mainWindow, resolveIcon)
-    registerOcr(() => mainWindow, resolvePreload)
+    t = createT(app.getLocale())
+    registerIpc(() => mainWindow, resolveIcon, t)
+    registerOcr(() => mainWindow, resolvePreload, t)
+
+    // 渲染进程查询界面语言
+    ipcMain.handle('app:get-locale', () => app.getLocale())
 
     // 启动参数中携带的工程文件
     const launchFile = process.argv.find((a) => a.toLowerCase().endsWith('.zyecb'))
@@ -57,7 +65,7 @@ function createWindow() {
     height: 800,
     minWidth: 900,
     minHeight: 650,
-    title: '钟毓英语衡水体字帖生成器',
+    title: t('appName'),
     icon: resolveIcon(),
     backgroundColor: '#f3f4f6',
     webPreferences: {
@@ -110,66 +118,79 @@ function sendMenuAction(id) {
   }
 }
 
-// Electron 顶层菜单栏（Linux GTK 与 Windows 均如此）会把 "(&X)" 整体从显示文本剥离、仅注册助记符，
-// 故顶层采用 "文字(X)(&X)" 双写：显示 "(X)" 且保留 Alt 快捷键；子菜单项只剥离 "&" 本身（字母带下划线）
-const topMenuLabel = (text, key) => `${text}(${key})(&${key})`
-const itemLabel = (text, key, suffix = '') => `${text}(&${key})${suffix}`
+// 菜单助记符跨平台写法（实测 Electron 31/33）：
+// - 中文：Linux GTK 与 Windows 顶层菜单会把 "(&X)" 整体剥离只注册助记符，
+//   故顶层双写 "文字(X)(&X)"；子菜单 "文字(&X)" 仅剥 & 符号、字母带下划线
+// - 英文：标准 "&File" 写法即可（GTK 剥符号保留字母，Win 显示下划线）
+function buildLabels(zh) {
+  const underline = (text, key, suffix = '') => {
+    if (zh) return `${text}(&${key})${suffix}`
+    if (key && text.includes(key)) return text.replace(key, `&${key}`) + suffix
+    return `&${text}${suffix}`
+  }
+  return {
+    top: (text, key) => (zh ? `${text}(${key})(&${key})` : underline(text, key)),
+    item: underline
+  }
+}
 
 function buildMenu() {
+  const zh = isZhLocale(app.getLocale())
+  const L = buildLabels(zh)
   const template = [
     {
-      label: topMenuLabel('文件', 'F'),
+      label: L.top(t('menu.file'), 'F'),
       submenu: [
-        { label: itemLabel('新建', 'N'), accelerator: 'CmdOrCtrl+N', click: () => sendMenuAction('new') },
+        { label: L.item(t('menu.new'), 'N'), accelerator: 'CmdOrCtrl+N', click: () => sendMenuAction('new') },
         { type: 'separator' },
-        { label: itemLabel('打开', 'O', '...'), accelerator: 'CmdOrCtrl+O', click: () => sendMenuAction('open') },
-        { label: itemLabel('保存', 'S'), accelerator: 'CmdOrCtrl+S', click: () => sendMenuAction('save') },
+        { label: L.item(t('menu.open'), 'O', '...'), accelerator: 'CmdOrCtrl+O', click: () => sendMenuAction('open') },
+        { label: L.item(t('menu.save'), 'S'), accelerator: 'CmdOrCtrl+S', click: () => sendMenuAction('save') },
         {
-          label: itemLabel('另存为', 'A', '...'),
+          label: L.item(t('menu.saveAs'), 'A', '...'),
           accelerator: 'CmdOrCtrl+Shift+S',
           click: () => sendMenuAction('saveAs')
         },
         { type: 'separator' },
         {
-          label: itemLabel('打印', 'P', '...'),
+          label: L.item(t('menu.print'), 'P', '...'),
           accelerator: 'CmdOrCtrl+P',
           click: () => sendMenuAction('print')
         },
-        { label: itemLabel('打印预览', 'V', '...'), click: () => sendMenuAction('printPreview') },
+        { label: L.item(t('menu.printPreview'), 'V', '...'), click: () => sendMenuAction('printPreview') },
         {
-          label: itemLabel('导出PDF', 'E', '...'),
+          label: L.item(t('menu.exportPdf'), 'E', '...'),
           accelerator: 'CmdOrCtrl+F',
           click: () => sendMenuAction('exportPdf')
         },
         { type: 'separator' },
-        { role: 'close', label: itemLabel('关闭', 'C') }
+        { role: 'close', label: L.item(t('menu.close'), 'C') }
       ]
     },
     {
-      label: topMenuLabel('编辑', 'E'),
+      label: L.top(t('menu.edit'), 'E'),
       submenu: [
-        { role: 'cut', label: itemLabel('剪切', 'T') },
-        { role: 'copy', label: itemLabel('复制', 'C') },
-        { role: 'paste', label: itemLabel('粘贴', 'P') },
+        { role: 'cut', label: L.item(t('menu.cut'), 'T') },
+        { role: 'copy', label: L.item(t('menu.copy'), 'C') },
+        { role: 'paste', label: L.item(t('menu.paste'), 'P') },
         { type: 'separator' },
-        { role: 'selectAll', label: itemLabel('全选', 'A') }
+        { role: 'selectAll', label: L.item(t('menu.selectAll'), 'A') }
       ]
     },
     {
-      label: topMenuLabel('帮助', 'H'),
+      label: L.top(t('menu.help'), 'H'),
       submenu: [
         {
-          label: itemLabel('帮助', 'H'),
+          label: L.item(t('menu.helpItem'), 'H'),
           accelerator: 'F1',
           click: () => sendMenuAction('help')
         },
-        { label: itemLabel('用户协议', 'A'), click: () => sendMenuAction('agreement') },
+        { label: L.item(t('menu.agreement'), zh ? 'A' : 'U'), click: () => sendMenuAction('agreement') },
         { type: 'separator' },
         {
-          label: '官网',
+          label: t('menu.website'),
           click: () => shell.openExternal('https://www.tzzhy.cn/')
         },
-        { label: itemLabel('关于', 'A'), click: () => sendMenuAction('about') }
+        { label: L.item(t('menu.about'), 'A'), click: () => sendMenuAction('about') }
       ]
     }
   ]
