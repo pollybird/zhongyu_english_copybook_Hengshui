@@ -21,6 +21,13 @@ contextBridge.exposeInMainWorld('api', {
 
   // 窗口
   setTitle: (title) => ipcRenderer.invoke('window:set-title', title),
+  // 主进程请求渲染进程确认是否可关闭（有未保存工程时由渲染进程弹窗确认）
+  onCloseCheckRequest: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('app:request-close-check', handler)
+    return () => ipcRenderer.removeListener('app:request-close-check', handler)
+  },
+  sendCloseCheckResult: (allowed) => ipcRenderer.send('app:close-check-result', allowed),
 
   // 对话框与文件读写
   openProjectDialog: () => ipcRenderer.invoke('dialog:open-project'),
@@ -39,6 +46,7 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('print:data', handler)
   },
   printRendered: () => ipcRenderer.send('print:rendered'),
+  printError: (message) => ipcRenderer.send('print:error', String(message || '')),
   previewPrint: () => ipcRenderer.send('print:preview-print'),
 
   // 截图 OCR（主窗口）

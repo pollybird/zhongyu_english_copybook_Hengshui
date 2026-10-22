@@ -9,6 +9,8 @@
  * title / custom_headers 属于用户文档内容，默认值随语言走（见 defaultDoc）。
  */
 
+import { APP_VERSION } from './version.js'
+
 export function isZhLocale(locale) {
   return /^zh([-_]|$)/i.test(String(locale || ''))
 }
@@ -135,6 +137,9 @@ const messages = {
       ocrDone: '识别完成，已填入 {n} 个字符',
       ocrFailTitle: '识别失败',
       ocrFail: 'OCR识别失败: {detail}',
+      rendererHungTitle: '程序无响应',
+      rendererHung: '界面进程没有响应，继续关闭可能丢失未保存的修改。是否强制关闭？',
+      forceClose: '强制关闭',
       helpTitle: '帮助',
       agreementTitle: '用户协议',
       aboutTitle: '关于'
@@ -142,6 +147,8 @@ const messages = {
 
     err: {
       renderTimeout: '页面渲染超时',
+      renderFailed: '页面渲染失败: {detail}',
+      pathNotAllowed: '不允许访问该文件路径',
       captureFailed: '无法获取屏幕画面',
       invalidImage: '无效的图像数据'
     },
@@ -167,7 +174,7 @@ const messages = {
 
     about: `钟毓英语衡水体字帖生成器（Electron 版）
 
-版本：2.0.3
+版本：{version}
 作者：泰州姜堰钟毓信息技术有限公司
 官网：https://www.tzzhy.cn/
 功能：生成英文字帖，支持多种模式和线格类型`
@@ -294,6 +301,10 @@ const messages = {
       ocrDone: 'Recognition complete. {n} characters inserted',
       ocrFailTitle: 'Recognition Failed',
       ocrFail: 'OCR failed: {detail}',
+      rendererHungTitle: 'Application Not Responding',
+      rendererHung:
+        'The interface process is not responding. Closing now may lose unsaved changes. Force close?',
+      forceClose: 'Force Close',
       helpTitle: 'Help',
       agreementTitle: 'User Agreement',
       aboutTitle: 'About'
@@ -301,6 +312,8 @@ const messages = {
 
     err: {
       renderTimeout: 'Page render timed out',
+      renderFailed: 'Page render failed: {detail}',
+      pathNotAllowed: 'Access to this file path is not allowed',
       captureFailed: 'Failed to capture the screen',
       invalidImage: 'Invalid image data'
     },
@@ -326,7 +339,7 @@ Shortcuts:
 
     about: `Zhongyu English Hengshui Copybook Generator (Electron Edition)
 
-Version: 2.0.3
+Version: {version}
 Author: Taizhou Jiangyan Zhongyu Information Technology Co., Ltd.
 Website: https://www.tzzhy.cn/
 Features: Generate English copybooks with multiple modes and line styles`
@@ -361,11 +374,12 @@ export function createT(locale) {
   const lang = isZhLocale(locale) ? 'zh' : 'en'
   return (key, vars) => {
     let str = lookup(lang, key)
-    if (vars) {
-      str = str.replace(/\{(\w+)\}/g, (m, name) =>
-        vars[name] !== undefined ? String(vars[name]) : m
-      )
-    }
+    str = str.replace(/\{(\w+)\}/g, (m, name) => {
+      if (vars && vars[name] !== undefined) return String(vars[name])
+      // {version} 由打包时的 package.json 提供，无需调用方传入
+      if (name === 'version') return APP_VERSION
+      return m
+    })
     return str
   }
 }

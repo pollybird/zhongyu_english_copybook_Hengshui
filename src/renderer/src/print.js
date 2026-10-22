@@ -48,5 +48,7 @@ window.api.onPrintData(async (settings) => {
     window.api.printRendered()
   } catch (err) {
     console.error('PDF 页面渲染失败', err)
+    // 上报主进程，避免其一直等待 print:rendered 直到超时
+    window.api.printError(err && err.message ? err.message : String(err))
   }
 })

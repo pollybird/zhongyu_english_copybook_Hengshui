@@ -1,9 +1,26 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron'
-import { join } from 'path'
-import fs from 'fs'
+import { join, resolve } from 'path'
+import fs from 'fs/promises'
 
 function documentsPath() {
   return app.getPath('documents')
+}
+
+/**
+ * 渲染进程允许读写的文件白名单。
+ * 只有经过系统对话框选择、命令行打开或文件关联传入的路径才放行，
+ * 避免渲染进程被 XSS 突破后任意读写磁盘。
+ */
+const allowedPaths = new Set()
+
+export function allowPath(filePath) {
+  if (filePath) allowedPaths.add(resolve(filePath))
+}
+
+function assertAllowed(filePath, t) {
+  if (!filePath || !allowedPaths.has(resolve(filePath))) {
+    throw new Error(t('err.pathNotAllowed'))
+  }
 }
 
 /** 打印/导出共用的打印参数：A4 无页边距、打印背景 */
@@ -14,24 +31,33 @@ const PRINT_OPTIONS = {
 }
 
 /**
- * 等待渲染窗口（print.html / preview.html）完成页面渲染
+ * 等待渲染窗口（print.html / preview.html）完成页面渲染。
+ * 渲染进程成功时发 print:rendered，失败时发 print:error，两者任一到达即结束等待，
+ * 避免失败后主进程空等到 30 秒超时。
  */
 function waitForRender(win, t) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolvePromise, reject) => {
     const timer = setTimeout(() => {
       cleanup()
       reject(new Error(t('err.renderTimeout')))
     }, 30000)
-    const onRendered = (event) => {
+    const onDone = (event) => {
       if (event.sender.id !== win.webContents.id) return
       cleanup()
-      resolve()
+      resolvePromise()
+    }
+    const onError = (event, message) => {
+      if (event.sender.id !== win.webContents.id) return
+      cleanup()
+      reject(new Error(t('err.renderFailed', { detail: message || t('msg.printUnknown') })))
     }
     const cleanup = () => {
       clearTimeout(timer)
-      ipcMain.removeListener('print:rendered', onRendered)
+      ipcMain.removeListener('print:rendered', onDone)
+      ipcMain.removeListener('print:error', onError)
     }
-    ipcMain.on('print:rendered', onRendered)
+    ipcMain.on('print:rendered', onDone)
+    ipcMain.on('print:error', onError)
   })
 }
 
@@ -58,10 +84,16 @@ async function createRenderWindow(data, t) {
     }
   })
   const rendered = waitForRender(win, t)
-  await loadRendererPage(win, 'print.html')
-  win.webContents.send('print:data', data)
-  await rendered
-  return win
+  try {
+    await loadRendererPage(win, 'print.html')
+    win.webContents.send('print:data', data)
+    await rendered
+    return win
+  } catch (err) {
+    // 渲染失败或超时：立刻销毁隐藏窗口，避免残留
+    if (!win.isDestroyed()) win.destroy()
+    throw err
+  }
 }
 
 /**
@@ -84,16 +116,6 @@ export function registerIpc(getMainWindow, resolveIcon, t) {
     if (win && !win.isDestroyed()) win.setTitle(title)
   })
 
-  // 关闭窗口前由渲染进程检查未保存的标签页
-  ipcMain.handle('app:check-close', async () => {
-    const win = getMainWindow()
-    if (!win) return true
-    const result = await win.webContents.executeJavaScript(
-      `window.__appHooks && window.__appHooks.canClose ? window.__appHooks.canClose() : true`
-    )
-    return Boolean(result)
-  })
-
   ipcMain.handle('dialog:open-project', async () => {
     const win = getMainWindow()
     const { canceled, filePaths } = await dialog.showOpenDialog(win, {
@@ -102,6 +124,7 @@ export function registerIpc(getMainWindow, resolveIcon, t) {
       properties: ['openFile']
     })
     if (canceled || filePaths.length === 0) return null
+    allowPath(filePaths[0])
     return filePaths[0]
   })
 
@@ -113,7 +136,9 @@ export function registerIpc(getMainWindow, resolveIcon, t) {
       filters: [{ name: t('dlg.projectFilter'), extensions: ['zyecb'] }]
     })
     if (canceled || !filePath) return null
-    return filePath.endsWith('.zyecb') ? filePath : filePath + '.zyecb'
+    const finalPath = filePath.toLowerCase().endsWith('.zyecb') ? filePath : filePath + '.zyecb'
+    allowPath(finalPath)
+    return finalPath
   })
 
   ipcMain.handle('dialog:save-pdf', async (_event, defaultPath) => {
@@ -124,30 +149,34 @@ export function registerIpc(getMainWindow, resolveIcon, t) {
       filters: [{ name: t('dlg.pdfFilter'), extensions: ['pdf'] }]
     })
     if (canceled || !filePath) return null
-    return filePath.endsWith('.pdf') ? filePath : filePath + '.pdf'
+    const finalPath = filePath.toLowerCase().endsWith('.pdf') ? filePath : filePath + '.pdf'
+    allowPath(finalPath)
+    return finalPath
   })
 
   ipcMain.handle('file:read', async (_event, filePath) => {
-    const buffer = fs.readFileSync(filePath)
+    assertAllowed(filePath, t)
+    const buffer = await fs.readFile(filePath)
     // 以 Uint8Array 传给渲染进程，由其自行解析 pickle / json
     return new Uint8Array(buffer)
   })
 
   ipcMain.handle('file:write', async (_event, { filePath, bytes }) => {
-    const buffer = Buffer.from(bytes)
-    fs.writeFileSync(filePath, buffer)
+    assertAllowed(filePath, t)
+    await fs.writeFile(filePath, Buffer.from(bytes))
     return true
   })
 
   // PDF 导出：在隐藏窗口中渲染全部页面，再 printToPDF
   ipcMain.handle('pdf:export', async (_event, { filePath, data }) => {
+    assertAllowed(filePath, t)
     const pdfWin = await createRenderWindow(data, t)
     try {
       const pdf = await pdfWin.webContents.printToPDF({
         landscape: false,
         ...PRINT_OPTIONS
       })
-      fs.writeFileSync(filePath, pdf)
+      await fs.writeFile(filePath, pdf)
     } finally {
       pdfWin.close()
     }
@@ -171,7 +200,13 @@ export function registerIpc(getMainWindow, resolveIcon, t) {
       previewWin.focus()
       const rendered = waitForRender(previewWin, t)
       previewWin.webContents.send('print:data', data)
-      await rendered
+      try {
+        await rendered
+      } catch (err) {
+        // 渲染失败时关闭预览窗，避免留下空白窗口
+        if (!previewWin.isDestroyed()) previewWin.close()
+        throw err
+      }
       return true
     }
     previewWin = new BrowserWindow({
@@ -195,11 +230,17 @@ export function registerIpc(getMainWindow, resolveIcon, t) {
     // 预览窗口不需要应用菜单（macOS 菜单在顶部栏，无需处理）
     if (process.platform !== 'darwin') previewWin.setMenu(null)
     const rendered = waitForRender(previewWin, t)
-    await loadRendererPage(previewWin, 'preview.html')
-    previewWin.webContents.send('print:data', data)
-    await rendered
-    // 渲染完成后再显示，避免白屏
-    previewWin.show()
+    try {
+      await loadRendererPage(previewWin, 'preview.html')
+      previewWin.webContents.send('print:data', data)
+      await rendered
+      // 渲染完成后再显示，避免白屏
+      previewWin.show()
+    } catch (err) {
+      if (previewWin && !previewWin.isDestroyed()) previewWin.close()
+      previewWin = null
+      throw err
+    }
     return true
   })
 
@@ -215,6 +256,7 @@ export const pendingOpenFiles = []
 
 export function queueOpenFile(filePath) {
   if (filePath && filePath.toLowerCase().endsWith('.zyecb')) {
+    allowPath(filePath)
     pendingOpenFiles.push(filePath)
   }
 }

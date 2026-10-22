@@ -232,10 +232,21 @@ export function renderPage(ctx, rows, settings, pageIndex, totalPages) {
     if (row.tokens.length === 0) continue
 
     const textY = isFourLine ? row.y + 30 + yOffset : row.y + 20 + yOffset
+    const right = RECT_X + 10 + settings.position_x + (RECT_W - 30)
     for (const token of row.tokens) {
+      // 字间距为 0 时整词一次绘制，减少 draw call（能完整放下的词才走快路径，
+      // 超长词仍逐字绘制以保持原有的右侧裁剪行为）
+      if (!settings.letter_spacing) {
+        let width = 0
+        for (const ch of token.text) width += measurer.width(ch)
+        if (token.x + width <= right) {
+          ctx.fillText(token.text, token.x, textY)
+          continue
+        }
+      }
       let x = token.x
       for (const ch of token.text) {
-        if (x > RECT_X + 10 + settings.position_x + (RECT_W - 30)) break
+        if (x > right) break
         ctx.fillText(ch, x, textY)
         x += measurer.width(ch) + settings.letter_spacing
       }
@@ -257,15 +268,15 @@ export function renderPage(ctx, rows, settings, pageIndex, totalPages) {
   }
 }
 
-/** 便捷方法：排版 + 渲染某一页到 canvas */
-export function drawPageToCanvas(canvas, settings, pageIndex, dpr = 1) {
-  const pages = buildPages(settings)
-  const total = pages.length
+/** 便捷方法：排版 + 渲染某一页到 canvas（传入 pages 可复用已排版结果） */
+export function drawPageToCanvas(canvas, settings, pageIndex, dpr = 1, pages = null) {
+  const allPages = pages || buildPages(settings)
+  const total = allPages.length
   const safeIndex = Math.min(Math.max(0, pageIndex), total - 1)
   canvas.width = PAGE_W * dpr
   canvas.height = PAGE_H * dpr
   const ctx = canvas.getContext('2d')
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  renderPage(ctx, pages[safeIndex], settings, safeIndex, total)
+  renderPage(ctx, allPages[safeIndex], settings, safeIndex, total)
   return { totalPages: total, pageIndex: safeIndex }
 }

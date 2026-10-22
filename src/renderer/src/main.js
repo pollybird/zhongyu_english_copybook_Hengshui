@@ -1,5 +1,5 @@
 import './styles.css'
-import { drawPageToCanvas } from './engine/copybook.js'
+import { buildPages, drawPageToCanvas } from './engine/copybook.js'
 import {
   DEFAULT_SETTINGS,
   normalizeSettings,
@@ -63,7 +63,9 @@ function createTab(state = null) {
     currentPage: 0,
     filePath: null,
     modified: false,
-    selectedHeader: -1
+    selectedHeader: -1,
+    // 已排版页缓存：状态变化时置空，翻页/重绘直接复用
+    pages: null
   }
   tabs.push(tab)
   return tab
@@ -188,10 +190,21 @@ function bindInputs() {
   })
 
   const bindNumber = (input, key, min, max) => {
+    // 输入过程中允许空值 / 负号等中间态，不回写输入框；失焦时再归一
     input.addEventListener('input', () => {
       if (syncing) return
-      activeTab.state[key] = clampInt(input, min, max)
+      const raw = parseInt(input.value, 10)
+      if (!Number.isFinite(raw)) return
+      activeTab.state[key] = Math.min(max, Math.max(min, raw))
       markModified()
+    })
+    input.addEventListener('blur', () => {
+      if (syncing || !activeTab) return
+      const next = clampInt(input, min, max)
+      if (next !== activeTab.state[key]) {
+        activeTab.state[key] = next
+        markModified()
+      }
     })
   }
   bindNumber(els.fontSize, 'font_size', 10, 50)
@@ -220,6 +233,7 @@ function bindInputs() {
 function markModified() {
   if (syncing || !activeTab) return
   activeTab.modified = true
+  activeTab.pages = null // 内容变化，失效排版缓存
   renderTabs()
   schedulePreview()
 }
@@ -267,6 +281,12 @@ function dpr() {
   return Math.min(window.devicePixelRatio || 1, 2)
 }
 
+// 当前标签页的排版结果（按需构建，markModified 时失效）
+function pagesFor(tab) {
+  if (!tab.pages) tab.pages = buildPages(tab.state)
+  return tab.pages
+}
+
 function renderPreview() {
   previewQueued = false
   if (!activeTab) {
@@ -279,16 +299,12 @@ function renderPreview() {
     els.next.disabled = true
     return
   }
-  const { totalPages } = drawPageToCanvas(
-    els.canvas,
-    activeTab.state,
-    activeTab.currentPage,
-    dpr()
-  )
+  const pages = pagesFor(activeTab)
+  const totalPages = pages.length
   if (activeTab.currentPage > totalPages - 1) {
     activeTab.currentPage = totalPages - 1
-    drawPageToCanvas(els.canvas, activeTab.state, activeTab.currentPage, dpr())
   }
+  drawPageToCanvas(els.canvas, activeTab.state, activeTab.currentPage, dpr(), pages)
   els.pageLabel.textContent = t('ui.pageOf', {
     current: activeTab.currentPage + 1,
     total: totalPages
@@ -311,7 +327,8 @@ function prevPage() {
 }
 
 function nextPage() {
-  const { totalPages } = drawPageToCanvas(els.canvas, activeTab.state, 99999, dpr())
+  if (!activeTab) return
+  const totalPages = pagesFor(activeTab).length
   if (activeTab.currentPage < totalPages - 1) {
     activeTab.currentPage++
     renderPreview()
@@ -355,6 +372,7 @@ async function loadFromPath(filePath) {
     target.modified = false
     target.currentPage = 0
     target.selectedHeader = -1
+    target.pages = null
     activeTab = target
     fillForm(state)
     renderHeaders()
@@ -517,10 +535,11 @@ function bindOcr() {
         await showAlert(t('msg.ocrEmptyTitle'), t('msg.ocrEmpty'))
         return
       }
-      // 通过 insertText 写入，保留原生撤销并自动触发 input 事件（同步状态与预览）
+      // 用 setRangeText 替换全文（替代已废弃的 execCommand），并手动派发 input 事件同步状态与预览
       els.text.focus()
       els.text.select()
-      document.execCommand('insertText', false, clean)
+      els.text.setRangeText(clean, 0, els.text.value.length, 'end')
+      els.text.dispatchEvent(new Event('input', { bubbles: true }))
       els.ocrStatus.textContent = t('msg.ocrDone', { n: clean.length })
       setTimeout(() => {
         els.ocrStatus.hidden = true
@@ -565,6 +584,17 @@ async function init() {
   els.exportPdf.onclick = exportPdf
   bindMenu()
 
+  // 主进程请求关闭窗口：确认未保存的标签页后回复结果
+  window.api.onCloseCheckRequest(async () => {
+    let allowed = false
+    try {
+      allowed = await canCloseAll()
+    } catch (err) {
+      console.error('关闭确认失败', err)
+    }
+    window.api.sendCloseCheckResult(allowed)
+  })
+
   // 确保衡水体字体加载完成后再首次渲染
   await Promise.all([
     document.fonts.load('24px "HengshuiFont"'),
@@ -584,10 +614,6 @@ async function init() {
   if (initialFiles && initialFiles.length > 0) {
     loadFromPath(initialFiles[0])
   }
-}
-
-window.__appHooks = {
-  canClose: canCloseAll
 }
 
 init()

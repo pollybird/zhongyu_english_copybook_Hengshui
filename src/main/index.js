@@ -1,6 +1,6 @@
-import { app, BrowserWindow, Menu, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, Menu, shell, ipcMain, dialog } from 'electron'
 import { join } from 'path'
-import { registerIpc, queueOpenFile } from './ipc'
+import { registerIpc, queueOpenFile, allowPath } from './ipc'
 import { registerOcr } from './ocr'
 import { createT, isZhLocale } from '../shared/i18n.js'
 
@@ -9,6 +9,52 @@ let t = (key) => key
 
 let mainWindow = null
 let readyToQuit = false
+// 关闭确认进行中：用户连续点关闭时避免重复弹窗
+let closeCheckPending = false
+
+/** 1 秒内渲染进程能执行脚本即视为响应正常 */
+function isRendererResponsive(win, timeoutMs = 1000) {
+  return Promise.race([
+    win.webContents.executeJavaScript('1').then(() => true),
+    new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
+  ]).catch(() => false)
+}
+
+/** 请渲染进程检查未保存标签页，等待其回复（可能包含用户交互，不设超时） */
+function waitForRendererDecision(win) {
+  return new Promise((resolve) => {
+    const onResult = (event, allowed) => {
+      if (event.sender.id !== win.webContents.id) return
+      cleanup()
+      resolve(Boolean(allowed))
+    }
+    const onClosed = () => {
+      cleanup()
+      resolve(true)
+    }
+    const cleanup = () => {
+      ipcMain.removeListener('app:close-check-result', onResult)
+      win.removeListener('closed', onClosed)
+    }
+    ipcMain.on('app:close-check-result', onResult)
+    win.once('closed', onClosed)
+    win.webContents.send('app:request-close-check')
+  })
+}
+
+/** 渲染进程无响应时的原生兜底确认框 */
+async function confirmForceClose(win) {
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'warning',
+    buttons: [t('msg.forceClose'), t('btn.cancel')],
+    defaultId: 1,
+    cancelId: 1,
+    noLink: true,
+    title: t('msg.rendererHungTitle'),
+    message: t('msg.rendererHung')
+  })
+  return response === 0
+}
 
 // 单实例：第二个实例通过系统文件关联打开 .zyecb 时转发到已有窗口
 const gotLock = app.requestSingleInstanceLock()
@@ -20,6 +66,7 @@ if (!gotLock) {
     if (file && mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
+      allowPath(file)
       mainWindow.webContents.send('open-file', file)
     }
   })
@@ -87,24 +134,26 @@ function createWindow() {
 
   buildMenu()
 
-  // 关闭前让渲染进程逐一确认未保存的标签页
-  mainWindow.on('close', (event) => {
+  // 关闭前让渲染进程逐一确认未保存的标签页（走 IPC，不再注入 executeJavaScript）
+  mainWindow.on('close', async (event) => {
     if (readyToQuit) return
     event.preventDefault()
-    mainWindow.webContents
-      .executeJavaScript(
-        'window.__appHooks && window.__appHooks.canClose ? window.__appHooks.canClose() : true'
-      )
-      .then((can) => {
-        if (can) {
-          readyToQuit = true
-          mainWindow.close()
-        }
-      })
-      .catch(() => {
+    const win = mainWindow
+    if (!win || win.isDestroyed() || closeCheckPending) return
+    closeCheckPending = true
+    try {
+      // 先 1 秒探测渲染进程是否响应；卡死时弹原生确认框，避免窗口永远关不掉
+      const responsive = await isRendererResponsive(win)
+      const canClose = responsive
+        ? await waitForRendererDecision(win)
+        : await confirmForceClose(win)
+      if (canClose && !win.isDestroyed()) {
         readyToQuit = true
-        mainWindow.close()
-      })
+        win.close()
+      }
+    } finally {
+      closeCheckPending = false
+    }
   })
 
   mainWindow.on('closed', () => {

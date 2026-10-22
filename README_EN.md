@@ -4,7 +4,7 @@
 
 A desktop application that generates English copybooks in the Hengshui handwriting style. Enter English text, pick a line style and a generation mode, preview in real time, then print directly or export to PDF.
 
-Current version: **2.0.3** (rewritten from PyQt6 to Electron since 2.0.0, see [UPGRADE.md](UPGRADE.md))
+Current version: **2.0.4** (rewritten from PyQt6 to Electron since 2.0.0, see [UPGRADE.md](UPGRADE.md))
 
 Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · Website: https://www.tzzhy.cn/
 

@@ -36,8 +36,13 @@ export function normalizeSettings(raw = {}) {
       : d.generate_mode,
     custom_headers: headers,
     title: typeof raw.title === 'string' ? raw.title : d.title,
+    // pickle 协议0 把 True/False 存成 I01/I00，读回会是整数 1/0，这里一并兼容
     show_page_number:
-      typeof raw.show_page_number === 'boolean' ? raw.show_page_number : d.show_page_number
+      typeof raw.show_page_number === 'boolean'
+        ? raw.show_page_number
+        : raw.show_page_number === 0 || raw.show_page_number === 1
+          ? Boolean(raw.show_page_number)
+          : d.show_page_number
   }
 }
 
