@@ -4,7 +4,7 @@
 
 A desktop application that generates English copybooks in the Hengshui handwriting style. Enter English text, pick a line style and a generation mode, preview in real time, then print directly or export to PDF.
 
-Current version: **2.0.4** (rewritten from PyQt6 to Electron since 2.0.0, see [UPGRADE.md](UPGRADE.md))
+Current version: **2.0.5** (rewritten from PyQt6 to Electron since 2.0.0, see [UPGRADE.md](UPGRADE.md))
 
 Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · Website: https://www.tzzhy.cn/
 
@@ -19,6 +19,7 @@ Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · 
 - **Project files**: `.zyecb` format, bidirectionally compatible with the original PyQt6 v1.1.1, with file association registered (double-click to open)
 - **Print & Print Preview** (new in 2.0.2): no need to export a PDF first — **Ctrl+P** opens the system print dialog directly; the preview window lets you check each page, zoom, and follow page numbers while scrolling
 - **Automatic Chinese/English UI** (new in 2.0.3): follows the system language — Chinese UI on Chinese systems, English as the fallback for everything else; the `.zyecb` project file format is unaffected
+- **Custom grid and tracing colors** (new in 2.0.5): pick the grid-line color and the tracing text color with a color picker; both are saved with the project
 - **PDF export**: multi-page A4 with high-resolution tracing/grid rendering; printing and exporting share the same A4 rendering pipeline for identical output
 - **Layout engine fix**: fixed the original issue where single-line mode estimated lines as four-line grid, causing duplicated words across pages
 
@@ -27,6 +28,12 @@ Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · 
 - Electron 33 + electron-vite 2 + Vite 5 (plain JavaScript, no frontend framework)
 - Canvas 2D layout rendering, tesseract.js offline OCR (bundled tessdata_fast language data)
 - electron-builder cross-platform packaging (Windows NSIS, Linux AppImage/deb/rpm, macOS zip/dmg)
+
+## Font
+
+- The bundled font is the self-made **Hengshui Fountain Pen** typeface (`衡水钢笔体.woff2`, with the woff file as a fallback), distributed with the app under the MIT License — see [`src/renderer/src/assets/fonts/LICENSE.txt`](src/renderer/src/assets/fonts/LICENSE.txt)
+- Font project home pages (standalone downloads): GitHub <https://github.com/pollybird/Hengshui_Fonts> | GitCode <https://gitcode.com/pollybird/Hengshui_Fonts> | Gitee <https://gitee.com/pollybird/hengshui-fonts>
+- It covers printable ASCII (U+0020–U+007E) and Western supplement symbols; Chinese characters such as the page-number labels fall back to a system font
 
 ## Development
 
@@ -97,7 +104,7 @@ Requires Node.js 18 or later.
 │   └── renderer/          # Renderer process (index.html main UI, print.html print rendering, preview.html print preview, sel.html screen selection)
 │       └── src/
 │           ├── engine/    # copybook.js layout engine, zyecb-format.js project file I/O
-│           └── assets/    # Hengshui font, agreement texts
+│           └── assets/    # Self-made Hengshui Fountain Pen font, agreement texts
 ├── resources/             # Icons, copyright text, OCR language data (ocr-data)
 └── out/                   # Build output
 ```

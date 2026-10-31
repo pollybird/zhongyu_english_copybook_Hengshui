@@ -4,7 +4,7 @@
 
 生成英语衡水体字帖的桌面应用。输入英文内容，选择线格与生成模式，即可实时预览，并可直接打印、打印预览或导出为 PDF。
 
-当前版本：**2.0.4**（自 2.0.0 起由 PyQt6 重构为 Electron，见 [UPGRADE.md](UPGRADE.md)）
+当前版本：**2.0.5**（自 2.0.0 起由 PyQt6 重构为 Electron，见 [UPGRADE.md](UPGRADE.md)）
 
 版权所有 (c) 2026 泰州姜堰钟毓信息技术有限公司 · 官网：https://www.tzzhy.cn/
 
@@ -19,6 +19,7 @@
 - **工程文件**：`.zyecb` 格式，与原版 PyQt6 v1.1.1 双向兼容，已注册文件关联（双击打开）
 - **打印与打印预览**（2.0.2 新增）：无需先导出 PDF，**Ctrl+P** 直接弹出系统打印对话框；打印预览窗口可逐页查看排版、缩放与页码跟随
 - **中英文自动适配**（2.0.3 新增）：跟随系统语言，中文系统显示中文，其他语言以英文兜底；`.zyecb` 工程文件格式不受影响
+- **横线与描红配色自定义**（2.0.5 新增）：用系统取色器设置横线颜色与描红文字颜色，随工程一并保存
 - **PDF 导出**：A4 多页，描红/网格高清渲染；打印与导出共用同一 A4 渲染管线，效果完全一致
 - **排版引擎修正**：修复了原版单横线模式按四线三格估算导致的跨页重复单词问题
 
@@ -27,6 +28,13 @@
 - Electron 33 + electron-vite 2 + Vite 5（原生 JavaScript，无前端框架）
 - Canvas 2D 排版渲染，tesseract.js 离线 OCR（内置 tessdata_fast 语言数据）
 - electron-builder 跨平台打包（Windows NSIS、Linux AppImage/deb/rpm、macOS zip/dmg）
+
+## 字体说明
+
+- 内置字体为自制的 **衡水钢笔体**（`衡水钢笔体.woff2`，woff2 优先、woff 兜底），随应用以 MIT 许可分发，许可全文见 [`src/renderer/src/assets/fonts/LICENSE.txt`](src/renderer/src/assets/fonts/LICENSE.txt)
+- 字体项目主页（可单独下载最新版）：GitHub <https://github.com/pollybird/Hengshui_Fonts> ｜ GitCode <https://gitcode.com/pollybird/Hengshui_Fonts> ｜ Gitee <https://gitee.com/pollybird/hengshui-fonts>
+- 覆盖 ASCII 可见字符（U+0020–U+007E）及西文补充符号；页码等中文字符使用系统字体回退
+- 2.0.5 起已移除第三方字体「舒窈英文衡水体」（其授权信息不明）；2.0.0–2.0.4 的安装包中仍包含该字体，请以 2.0.5 及之后的版本为准
 
 ## 开发
 
@@ -97,7 +105,7 @@ npx electron-builder --mac zip
 │   └── renderer/          # 渲染进程（index.html 主界面、print.html 打印渲染、preview.html 打印预览、sel.html 截图选区）
 │       └── src/
 │           ├── engine/    # copybook.js 排版引擎、zyecb-format.js 工程文件读写
-│           └── assets/    # 衡水体字体、协议文本
+│           └── assets/    # 自制衡水钢笔体字体、协议文本
 ├── resources/             # 图标、版权文本、OCR 语言数据（ocr-data）
 └── out/                   # 构建产物
 ```

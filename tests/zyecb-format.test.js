@@ -20,11 +20,23 @@ test('serializeProject → parseProject 往返保持设置', () => {
     generate_mode: '抄写',
     custom_headers: ['班级', '姓名'],
     title: '测试字帖',
-    show_page_number: false
+    show_page_number: false,
+    line_color: '#3366cc',
+    trace_color: '#FFCC00'
   }
   const bytes = serializeProject(settings)
   assert.ok(bytes instanceof Uint8Array)
-  assert.deepEqual(parseProject(bytes), settings)
+  // 颜色在读入时统一转小写
+  assert.deepEqual(parseProject(bytes), { ...settings, trace_color: '#ffcc00' })
+})
+
+test('颜色字段：缺省回落默认，非法值回落默认，大小写归一', () => {
+  const parsed = normalizeSettings({ line_color: 'red', trace_color: '#ABC', title: 'x' })
+  assert.equal(parsed.line_color, DEFAULT_SETTINGS.line_color)
+  assert.equal(parsed.trace_color, '#abc')
+  const legacy = normalizeSettings({ text_content: 'abc' })
+  assert.equal(legacy.line_color, '#c0c0c0')
+  assert.equal(legacy.trace_color, '#ff6464')
 })
 
 test('缺失或非法字段回落到默认值', () => {

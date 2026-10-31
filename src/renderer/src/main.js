@@ -25,6 +25,8 @@ const els = {
   spacing: $('inp-spacing'),
   posX: $('inp-x'),
   posY: $('inp-y'),
+  lineColor: $('inp-line-color'),
+  traceColor: $('inp-trace-color'),
   lineType: $('inp-line-type'),
   mode: $('inp-mode'),
   title: $('inp-title'),
@@ -168,6 +170,8 @@ function fillForm(s) {
   els.spacing.value = s.letter_spacing
   els.posX.value = s.position_x
   els.posY.value = s.position_y
+  els.lineColor.value = s.line_color
+  els.traceColor.value = s.trace_color
   els.lineType.value = s.line_type
   els.mode.value = s.generate_mode
   els.title.value = s.title
@@ -211,6 +215,17 @@ function bindInputs() {
   bindNumber(els.spacing, 'letter_spacing', -10, 20)
   bindNumber(els.posX, 'position_x', -50, 50)
   bindNumber(els.posY, 'position_y', -50, 50)
+
+  // 取色器：拖动时实时预览，松开后即写入工程
+  const bindColor = (input, key) => {
+    input.addEventListener('input', () => {
+      if (syncing || !activeTab) return
+      activeTab.state[key] = input.value
+      markModified()
+    })
+  }
+  bindColor(els.lineColor, 'line_color')
+  bindColor(els.traceColor, 'trace_color')
 
   els.lineType.addEventListener('change', () => {
     activeTab.state.line_type = els.lineType.value

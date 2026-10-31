@@ -1,6 +1,7 @@
 @font-face {
   font-family: 'HengshuiFont';
-  src: url('./assets/fonts/舒窈英文衡水体.ttf') format('truetype');
+  src: url('./assets/fonts/衡水钢笔体.woff2') format('woff2'),
+    url('./assets/fonts/衡水钢笔体.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -195,6 +196,13 @@ select.input {
 .textarea:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* 取色器：去掉内部色块的内边距，保持与其他输入框一致的高度 */
+.color-input {
+  padding: 2px 3px;
+  height: 32px;
+  cursor: pointer;
 }
 
 .checkbox {

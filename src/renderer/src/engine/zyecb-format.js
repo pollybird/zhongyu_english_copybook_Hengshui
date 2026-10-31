@@ -16,8 +16,13 @@ export const DEFAULT_SETTINGS = Object.freeze({
   generate_mode: '描红',
   custom_headers: ['班级', '姓名', '学号'],
   title: '英文字帖',
-  show_page_number: true
+  show_page_number: true,
+  // 横线颜色与描红文字颜色（默认值与 2.0.4 及更早版本的固定配色一致）
+  line_color: '#c0c0c0',
+  trace_color: '#ff6464'
 })
+
+const HEX_COLOR = /^#[0-9a-f]{3}([0-9a-f]{3})?$/i
 
 export function normalizeSettings(raw = {}) {
   const d = DEFAULT_SETTINGS
@@ -42,8 +47,15 @@ export function normalizeSettings(raw = {}) {
         ? raw.show_page_number
         : raw.show_page_number === 0 || raw.show_page_number === 1
           ? Boolean(raw.show_page_number)
-          : d.show_page_number
+          : d.show_page_number,
+    line_color: colorOr(raw.line_color, d.line_color),
+    trace_color: colorOr(raw.trace_color, d.trace_color)
   }
+}
+
+/** 只接受 #rgb / #rrggbb 形式的颜色值，其余回落默认 */
+function colorOr(v, fallback) {
+  return typeof v === 'string' && HEX_COLOR.test(v) ? v.toLowerCase() : fallback
 }
 
 function numOr(v, fallback) {

@@ -21,8 +21,8 @@ const HEADER_H = 100
 const CONTENT_TOP = RECT_Y + HEADER_H // 120
 const BOTTOM_LIMIT = RECT_BOTTOM - 100 // 1011
 
-const GRID_COLOR = '#c0c0c0' // Qt lightGray
-const TRACE_COLOR = '#ff6464' // QColor(255, 100, 100) 描红淡红色
+const GRID_COLOR = '#c0c0c0' // Qt lightGray（可在设置中自定义）
+const TRACE_COLOR = '#ff6464' // QColor(255, 100, 100) 描红淡红色（可在设置中自定义）
 const BLACK = '#000000'
 const PAGE_NUM_COLOR = '#a0a0a0' // Qt gray
 
@@ -157,8 +157,8 @@ export function buildPages(settings) {
   return pages
 }
 
-function drawGrid(ctx, y, lineType) {
-  ctx.strokeStyle = GRID_COLOR
+function drawGrid(ctx, y, lineType, lineColor = GRID_COLOR) {
+  ctx.strokeStyle = lineColor
   ctx.lineWidth = 1
   ctx.beginPath()
   if (lineType === FOUR_LINE) {
@@ -215,7 +215,10 @@ export function renderPage(ctx, rows, settings, pageIndex, totalPages) {
   ctx.rect(RECT_X, CONTENT_TOP, RECT_W, RECT_BOTTOM - CONTENT_TOP - 30)
   ctx.clip()
 
-  const textColor = TRACE_MODES.includes(settings.generate_mode) ? TRACE_COLOR : BLACK
+  const textColor = TRACE_MODES.includes(settings.generate_mode)
+    ? settings.trace_color || TRACE_COLOR
+    : BLACK
+  const gridColor = settings.line_color || GRID_COLOR
   const isFourLine = settings.line_type === FOUR_LINE
   const yOffset = isFourLine ? settings.position_y - 4 : settings.position_y - 20
 
@@ -228,7 +231,7 @@ export function renderPage(ctx, rows, settings, pageIndex, totalPages) {
   const measurer = createMeasurer(settings.font_size)
 
   for (const row of rows) {
-    drawGrid(ctx, row.y, settings.line_type)
+    drawGrid(ctx, row.y, settings.line_type, gridColor)
     if (row.tokens.length === 0) continue
 
     const textY = isFourLine ? row.y + 30 + yOffset : row.y + 20 + yOffset

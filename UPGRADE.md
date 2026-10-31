@@ -1,5 +1,22 @@
 # 升级说明
 
+## v2.0.5（2026-10-31）
+
+### 变更
+
+- **内置字体更换**：移除授权信息不明的第三方「舒窈英文衡水体.ttf」，改用作者自制的 **衡水钢笔体**（`衡水钢笔体.woff2`，woff 兜底）；字体随应用以 MIT 许可分发，许可全文见 `src/renderer/src/assets/fonts/LICENSE.txt`
+  - 字形为重新制作，字符集覆盖 ASCII 可见字符（U+0020–U+007E）与西文补充符号；页码中的中文字符由系统字体回退
+  - 字体已单独开源，项目主页：GitHub <https://github.com/pollybird/Hengshui_Fonts> ｜ GitCode <https://gitcode.com/pollybird/Hengshui_Fonts> ｜ Gitee <https://gitee.com/pollybird/hengshui-fonts>
+  - 2.0.0–2.0.4 的安装包仍包含旧字体，请升级到 2.0.5 及之后版本
+- **横线颜色自定义**：新增取色器，可设置四线三格 / 单横线的线条颜色，默认仍为浅灰 `#C0C0C0`
+- **描红颜色自定义**：新增取色器，可设置「描红」「描红+抄写」模式的描红文字颜色，默认仍为淡红 `#FF6464`
+
+### 工程文件兼容
+
+- 新增两个字段 `line_color` / `trace_color`（`#RRGGBB`）。旧工程打开时自动使用默认配色；新工程保存后原版 PyQt6 程序仍可打开（多余字段会被忽略）
+
+---
+
 ## v2.0.4（2026-10-22）
 
 ### 问题修复
