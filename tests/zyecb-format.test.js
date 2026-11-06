@@ -47,6 +47,13 @@ test('缺失或非法字段回落到默认值', () => {
   assert.deepEqual(parsed.custom_headers, DEFAULT_SETTINGS.custom_headers)
 })
 
+test('字体字段：旧工程缺省钢笔体，中性笔体可往返保存', () => {
+  assert.equal(normalizeSettings({ text_content: 'a' }).font_family, '衡水钢笔体')
+  assert.equal(normalizeSettings({ font_family: '未知字体' }).font_family, '衡水钢笔体')
+  const bytes = serializeProject({ ...DEFAULT_SETTINGS, font_family: '衡水中性笔体' })
+  assert.equal(parseProject(bytes).font_family, '衡水中性笔体')
+})
+
 test('JSON 格式工程文件可解析', () => {
   const json = new TextEncoder().encode(
     JSON.stringify({ text_content: 'abc', title: 'JSON 标题' })

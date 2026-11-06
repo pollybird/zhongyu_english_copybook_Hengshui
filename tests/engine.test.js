@@ -11,7 +11,9 @@ globalThis.document = {
   })
 }
 
-const { tokenize, buildPages } = await import('../src/renderer/src/engine/copybook.js')
+const { tokenize, buildPages, fontFamilyName } = await import(
+  '../src/renderer/src/engine/copybook.js'
+)
 const { DEFAULT_SETTINGS } = await import('../src/renderer/src/engine/zyecb-format.js')
 
 function tokensOf(pages) {
@@ -47,4 +49,11 @@ test('排版既不多词也不漏词（单横线）', () => {
 test('空白文案也能得到至少一页', () => {
   const pages = buildPages({ ...DEFAULT_SETTINGS, text_content: '   \n\n  ' })
   assert.equal(pages.length, 1)
+})
+
+test('字体令牌映射到对应的 CSS 字体族，未知值回落钢笔体', () => {
+  assert.equal(fontFamilyName({ font_family: '衡水钢笔体' }), 'HengshuiFountainPen')
+  assert.equal(fontFamilyName({ font_family: '衡水中性笔体' }), 'HengshuiGelPen')
+  assert.equal(fontFamilyName({ font_family: '其他' }), 'HengshuiFountainPen')
+  assert.equal(fontFamilyName({}), 'HengshuiFountainPen')
 })

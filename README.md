@@ -4,7 +4,7 @@
 
 生成英语衡水体字帖的桌面应用。输入英文内容，选择线格与生成模式，即可实时预览，并可直接打印、打印预览或导出为 PDF。
 
-当前版本：**2.0.5**（自 2.0.0 起由 PyQt6 重构为 Electron，见 [UPGRADE.md](UPGRADE.md)）
+当前版本：**2.0.6**（自 2.0.0 起由 PyQt6 重构为 Electron，见 [UPGRADE.md](UPGRADE.md)）
 
 版权所有 (c) 2026 泰州姜堰钟毓信息技术有限公司 · 官网：https://www.tzzhy.cn/
 
@@ -12,6 +12,7 @@
 
 - **四种生成模式**：描红、抄写、描红+抄写、字帖
 - **两种线格**：四线三格、单横线
+- **两款字体可选**（2.0.6 新增）：衡水钢笔体、衡水中性笔体，侧边栏下拉切换，随工程保存
 - **实时预览**：Canvas 渲染 800×1131 页面，PageUp/PageDown 翻页
 - **OCR 截图识别**（2.0.0 新增）：框选屏幕任意区域，自动识别文字填入内容框，支持英文 / 中文简体 / 英文+中文
 - **多标签页**：同时编辑多个工程，未保存关闭有提示
@@ -31,7 +32,7 @@
 
 ## 字体说明
 
-- 内置字体为自制的 **衡水钢笔体**（`衡水钢笔体.woff2`，woff2 优先、woff 兜底），随应用以 MIT 许可分发，许可全文见 [`src/renderer/src/assets/fonts/LICENSE.txt`](src/renderer/src/assets/fonts/LICENSE.txt)
+- 内置两款自制字体（均为 1.1.0）：**衡水钢笔体**、**衡水中性笔体**（各含 `woff2` 与 `woff` 兜底），可在侧边栏「字体」下拉框中切换；随应用以 MIT 许可分发，许可全文见 [`src/renderer/src/assets/fonts/LICENSE.txt`](src/renderer/src/assets/fonts/LICENSE.txt)
 - 字体项目主页（可单独下载最新版）：GitHub <https://github.com/pollybird/Hengshui_Fonts> ｜ GitCode <https://gitcode.com/pollybird/Hengshui_Fonts> ｜ Gitee <https://gitee.com/pollybird/hengshui-fonts>
 - 覆盖 ASCII 可见字符（U+0020–U+007E）及西文补充符号；页码等中文字符使用系统字体回退
 - 2.0.5 起已移除第三方字体「舒窈英文衡水体」（其授权信息不明）；2.0.0–2.0.4 的安装包中仍包含该字体，请以 2.0.5 及之后的版本为准

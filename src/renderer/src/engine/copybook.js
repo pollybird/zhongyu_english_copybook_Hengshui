@@ -9,6 +9,8 @@
  * Qt 的 QFont 字号单位是磅(pt)，96DPI 下 px = pt * 96 / 72。
  */
 
+import { FONT_FOUNTAIN_PEN, FONT_GEL_PEN } from './zyecb-format.js'
+
 export const PAGE_W = 800
 export const PAGE_H = 1131
 
@@ -26,7 +28,19 @@ const TRACE_COLOR = '#ff6464' // QColor(255, 100, 100) 描红淡红色（可在�
 const BLACK = '#000000'
 const PAGE_NUM_COLOR = '#a0a0a0' // Qt gray
 
-const FONT_FAMILY = '"HengshuiFont"'
+const FONT_FAMILIES = {
+  [FONT_FOUNTAIN_PEN]: 'HengshuiFountainPen',
+  [FONT_GEL_PEN]: 'HengshuiGelPen'
+}
+
+/** 工程字体令牌对应的 CSS 字体族名（未知值回落钢笔体） */
+export function fontFamilyName(settings) {
+  return FONT_FAMILIES[settings.font_family] || FONT_FAMILIES[FONT_FOUNTAIN_PEN]
+}
+
+function fontStack(settings) {
+  return `"${fontFamilyName(settings)}"`
+}
 
 const FOUR_LINE = '四线三格'
 const SINGLE_LINE = '单横线'
@@ -58,13 +72,13 @@ export function tokenize(text) {
   return words
 }
 
-function createMeasurer(fontSizePt) {
+function createMeasurer(settings) {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
-  ctx.font = `${pt(fontSizePt)}px ${FONT_FAMILY}`
+  ctx.font = `${pt(settings.font_size)}px ${fontStack(settings)}`
   const cache = new Map()
   return {
-    fontPx: pt(fontSizePt),
+    fontPx: pt(settings.font_size),
     width(char) {
       let w = cache.get(char)
       if (w === undefined) {
@@ -146,7 +160,7 @@ function layoutPage(words, start, settings, measurer) {
  */
 export function buildPages(settings) {
   const words = tokenize(settings.text_content)
-  const measurer = createMeasurer(settings.font_size)
+  const measurer = createMeasurer(settings)
   const pages = []
   let index = 0
   do {
@@ -177,12 +191,12 @@ function drawHeader(ctx, settings) {
   ctx.fillStyle = BLACK
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.font = `bold ${pt(18)}px ${FONT_FAMILY}`
+  ctx.font = `bold ${pt(18)}px ${fontStack(settings)}`
   ctx.fillText(settings.title || '', RECT_X + RECT_W / 2, RECT_Y + 25)
 
   const headers = settings.custom_headers || []
   if (headers.length > 0) {
-    ctx.font = `${pt(12)}px ${FONT_FAMILY}`
+    ctx.font = `${pt(12)}px ${fontStack(settings)}`
     ctx.textAlign = 'left'
     ctx.textBaseline = 'alphabetic'
     const fieldWidth = 200
@@ -223,12 +237,12 @@ export function renderPage(ctx, rows, settings, pageIndex, totalPages) {
   const yOffset = isFourLine ? settings.position_y - 4 : settings.position_y - 20
 
   ctx.fillStyle = textColor
-  ctx.font = `${pt(settings.font_size)}px ${FONT_FAMILY}`
+  ctx.font = `${pt(settings.font_size)}px ${fontStack(settings)}`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'alphabetic'
 
   // 复用排版时的度量，保证与换行计算完全一致
-  const measurer = createMeasurer(settings.font_size)
+  const measurer = createMeasurer(settings)
 
   for (const row of rows) {
     drawGrid(ctx, row.y, settings.line_type, gridColor)
@@ -260,7 +274,7 @@ export function renderPage(ctx, rows, settings, pageIndex, totalPages) {
   // 页码
   if (settings.show_page_number) {
     ctx.fillStyle = PAGE_NUM_COLOR
-    ctx.font = `${pt(12)}px ${FONT_FAMILY}`
+    ctx.font = `${pt(12)}px ${fontStack(settings)}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(

@@ -4,7 +4,7 @@
 
 A desktop application that generates English copybooks in the Hengshui handwriting style. Enter English text, pick a line style and a generation mode, preview in real time, then print directly or export to PDF.
 
-Current version: **2.0.5** (rewritten from PyQt6 to Electron since 2.0.0, see [UPGRADE.md](UPGRADE.md))
+Current version: **2.0.6** (rewritten from PyQt6 to Electron since 2.0.0, see [UPGRADE.md](UPGRADE.md))
 
 Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · Website: https://www.tzzhy.cn/
 
@@ -12,6 +12,7 @@ Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · 
 
 - **Four generation modes**: Trace, Copy, Trace + Copy, Copybook
 - **Two line styles**: Four-line Grid, Single Line
+- **Two selectable fonts** (new in 2.0.6): Hengshui Fountain Pen and Hengshui Gel Pen, switched from the sidebar and saved with the project
 - **Real-time preview**: Canvas-rendered 800×1131 pages, PageUp/PageDown paging
 - **Screen OCR** (new in 2.0.0): select any screen area and automatically fill the input box with the recognized text; supports English / Simplified Chinese / English + Chinese
 - **Multiple tabs**: edit several projects at once, with a prompt when closing unsaved tabs
@@ -31,7 +32,7 @@ Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · 
 
 ## Font
 
-- The bundled font is the self-made **Hengshui Fountain Pen** typeface (`衡水钢笔体.woff2`, with the woff file as a fallback), distributed with the app under the MIT License — see [`src/renderer/src/assets/fonts/LICENSE.txt`](src/renderer/src/assets/fonts/LICENSE.txt)
+- Two self-made typefaces (both 1.1.0) are bundled: **Hengshui Fountain Pen** and **Hengshui Gel Pen** (`woff2` with `woff` fallback), switchable from the **Font** dropdown in the sidebar, distributed with the app under the MIT License — see [`src/renderer/src/assets/fonts/LICENSE.txt`](src/renderer/src/assets/fonts/LICENSE.txt)
 - Font project home pages (standalone downloads): GitHub <https://github.com/pollybird/Hengshui_Fonts> | GitCode <https://gitcode.com/pollybird/Hengshui_Fonts> | Gitee <https://gitee.com/pollybird/hengshui-fonts>
 - It covers printable ASCII (U+0020–U+007E) and Western supplement symbols; Chinese characters such as the page-number labels fall back to a system font
 

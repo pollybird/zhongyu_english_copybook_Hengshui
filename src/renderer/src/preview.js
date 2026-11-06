@@ -1,4 +1,4 @@
-import { buildPages, renderPage, PAGE_W, PAGE_H } from './engine/copybook.js'
+import { buildPages, renderPage, fontFamilyName, PAGE_W, PAGE_H } from './engine/copybook.js'
 import { createT, getLang } from '../../shared/i18n.js'
 
 /**
@@ -70,9 +70,10 @@ const localeReady = window.api.getLocale().then((locale) => {
 window.api.onPrintData(async (settings) => {
   try {
     await localeReady
+    const family = fontFamilyName(settings)
     await Promise.all([
-      document.fonts.load('24px "HengshuiFont"'),
-      document.fonts.load('bold 24px "HengshuiFont"'),
+      document.fonts.load(`24px "${family}"`),
+      document.fonts.load(`bold 24px "${family}"`),
       document.fonts.ready
     ])
 

@@ -6,6 +6,10 @@
  *  - 读取：同时支持 pickle（协议 0~4 常见操作码子集）与 JSON
  */
 
+// 内置字体（工程文件中的枚举令牌，中文勿翻译）
+export const FONT_FOUNTAIN_PEN = '衡水钢笔体'
+export const FONT_GEL_PEN = '衡水中性笔体'
+
 export const DEFAULT_SETTINGS = Object.freeze({
   text_content: '',
   font_size: 18,
@@ -14,6 +18,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   position_y: 0,
   line_type: '四线三格',
   generate_mode: '描红',
+  // 2.0.6 起支持两种字体，旧工程缺省为钢笔体
+  font_family: FONT_FOUNTAIN_PEN,
   custom_headers: ['班级', '姓名', '学号'],
   title: '英文字帖',
   show_page_number: true,
@@ -39,6 +45,7 @@ export function normalizeSettings(raw = {}) {
     generate_mode: ['描红', '抄写', '描红+抄写', '字帖'].includes(raw.generate_mode)
       ? raw.generate_mode
       : d.generate_mode,
+    font_family: raw.font_family === FONT_GEL_PEN ? FONT_GEL_PEN : d.font_family,
     custom_headers: headers,
     title: typeof raw.title === 'string' ? raw.title : d.title,
     // pickle 协议0 把 True/False 存成 I01/I00，读回会是整数 1/0，这里一并兼容

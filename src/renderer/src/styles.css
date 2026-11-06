@@ -1,7 +1,16 @@
 @font-face {
-  font-family: 'HengshuiFont';
+  font-family: 'HengshuiFountainPen';
   src: url('./assets/fonts/衡水钢笔体.woff2') format('woff2'),
     url('./assets/fonts/衡水钢笔体.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'HengshuiGelPen';
+  src: url('./assets/fonts/衡水中性笔体.woff2') format('woff2'),
+    url('./assets/fonts/衡水中性笔体.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: block;

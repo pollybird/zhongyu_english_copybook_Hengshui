@@ -84,6 +84,9 @@ const messages = {
       offsetY: 'Y轴偏移:',
       lineColor: '横线颜色:',
       traceColor: '描红颜色:',
+      fontFamily: '字体',
+      fontFountainPen: '衡水钢笔体',
+      fontGelPen: '衡水中性笔体',
       lineType: '线格类型',
       lineFour: '四线三格',
       lineSingle: '单横线',
@@ -159,11 +162,12 @@ const messages = {
 
 1. 在左侧文本框中输入要生成字帖的英文内容
 2. 设置字体大小、字间距、位置偏移等参数
-3. 选择线格类型（四线三格或单横线）
-4. 选择生成模式（描红、抄写、描红+抄写、字帖）
-5. 点击保存工程可以保存当前设置
-6. 点击加载工程可以加载之前保存的设置
-7. 点击导出PDF可以将字帖导出为PDF文件
+3. 选择字体（衡水钢笔体 / 衡水中性笔体）
+4. 选择线格类型（四线三格或单横线）
+5. 选择生成模式（描红、抄写、描红+抄写、字帖）
+6. 点击保存工程可以保存当前设置
+7. 点击加载工程可以加载之前保存的设置
+8. 点击导出PDF可以将字帖导出为PDF文件
 
 快捷键：
   Ctrl+N        新建工程
@@ -250,6 +254,9 @@ const messages = {
       offsetY: 'Y offset:',
       lineColor: 'Grid color:',
       traceColor: 'Tracing color:',
+      fontFamily: 'Font',
+      fontFountainPen: 'Hengshui Fountain Pen',
+      fontGelPen: 'Hengshui Gel Pen',
       lineType: 'Line Style',
       lineFour: 'Four-line Grid',
       lineSingle: 'Single Line',
@@ -326,11 +333,12 @@ const messages = {
 
 1. Enter the English text for the copybook in the text box on the left
 2. Adjust font size, letter spacing and position offsets
-3. Choose a line style (four-line grid or single line)
-4. Choose a generation mode (Trace, Copy, Trace + Copy, Copybook)
-5. Use Save to store the current project
-6. Use Open to load a previously saved project
-7. Use Export PDF to save the copybook as a PDF file
+3. Choose a font (Hengshui Fountain Pen / Hengshui Gel Pen)
+4. Choose a line style (four-line grid or single line)
+5. Choose a generation mode (Trace, Copy, Trace + Copy, Copybook)
+6. Use Save to store the current project
+7. Use Open to load a previously saved project
+8. Use Export PDF to save the copybook as a PDF file
 
 Shortcuts:
   Ctrl+N          New project

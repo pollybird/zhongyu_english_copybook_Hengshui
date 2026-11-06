@@ -1,7 +1,9 @@
 import './styles.css'
-import { buildPages, drawPageToCanvas } from './engine/copybook.js'
+import { buildPages, drawPageToCanvas, fontFamilyName } from './engine/copybook.js'
 import {
   DEFAULT_SETTINGS,
+  FONT_FOUNTAIN_PEN,
+  FONT_GEL_PEN,
   normalizeSettings,
   serializeProject,
   parseProject
@@ -27,6 +29,7 @@ const els = {
   posY: $('inp-y'),
   lineColor: $('inp-line-color'),
   traceColor: $('inp-trace-color'),
+  fontFamily: $('inp-font-family'),
   lineType: $('inp-line-type'),
   mode: $('inp-mode'),
   title: $('inp-title'),
@@ -172,6 +175,7 @@ function fillForm(s) {
   els.posY.value = s.position_y
   els.lineColor.value = s.line_color
   els.traceColor.value = s.trace_color
+  els.fontFamily.value = s.font_family
   els.lineType.value = s.line_type
   els.mode.value = s.generate_mode
   els.title.value = s.title
@@ -185,6 +189,15 @@ function clampInt(input, min, max) {
   v = Math.min(max, Math.max(min, v))
   input.value = v
   return v
+}
+
+/** 预加载指定字体，保证排版度量使用的是字体本身而非回退字体 */
+async function loadFont(font) {
+  const family = fontFamilyName({ font_family: font })
+  await Promise.all([
+    document.fonts.load(`24px "${family}"`),
+    document.fonts.load(`bold 24px "${family}"`)
+  ])
 }
 
 function bindInputs() {
@@ -226,6 +239,14 @@ function bindInputs() {
   }
   bindColor(els.lineColor, 'line_color')
   bindColor(els.traceColor, 'trace_color')
+
+  els.fontFamily.addEventListener('change', async () => {
+    if (syncing || !activeTab) return
+    activeTab.state.font_family = els.fontFamily.value
+    // 切换字体后先等字体就绪再重排，避免用回退字体度量导致换行错位
+    await loadFont(els.fontFamily.value)
+    markModified()
+  })
 
   els.lineType.addEventListener('change', () => {
     activeTab.state.line_type = els.lineType.value
@@ -610,11 +631,8 @@ async function init() {
     window.api.sendCloseCheckResult(allowed)
   })
 
-  // 确保衡水体字体加载完成后再首次渲染
-  await Promise.all([
-    document.fonts.load('24px "HengshuiFont"'),
-    document.fonts.ready
-  ])
+  // 确保内置字体加载完成后再首次渲染
+  await Promise.all([loadFont(FONT_FOUNTAIN_PEN), loadFont(FONT_GEL_PEN), document.fonts.ready])
 
   const firstName = untitledName()
   const first = createTab()

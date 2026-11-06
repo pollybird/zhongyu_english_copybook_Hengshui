@@ -1,4 +1,4 @@
-import { buildPages, renderPage, PAGE_W, PAGE_H } from './engine/copybook.js'
+import { buildPages, renderPage, fontFamilyName, PAGE_W, PAGE_H } from './engine/copybook.js'
 import { createT } from '../../shared/i18n.js'
 
 // 隐藏渲染窗口无可见界面，仅同步文档标题语言
@@ -16,9 +16,10 @@ const PRINT_DPR = 2
 
 window.api.onPrintData(async (settings) => {
   try {
+    const family = fontFamilyName(settings)
     await Promise.all([
-      document.fonts.load('24px "HengshuiFont"'),
-      document.fonts.load('bold 24px "HengshuiFont"'),
+      document.fonts.load(`24px "${family}"`),
+      document.fonts.load(`bold 24px "${family}"`),
       document.fonts.ready
     ])
 
