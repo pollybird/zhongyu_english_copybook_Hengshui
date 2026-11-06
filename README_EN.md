@@ -105,7 +105,7 @@ Requires Node.js 18 or later.
 │   └── renderer/          # Renderer process (index.html main UI, print.html print rendering, preview.html print preview, sel.html screen selection)
 │       └── src/
 │           ├── engine/    # copybook.js layout engine, zyecb-format.js project file I/O
-│           └── assets/    # Self-made Hengshui Fountain Pen font, agreement texts
+│           └── assets/    # Self-made Hengshui Fountain Pen and Gel Pen fonts (woff2/woff), agreement texts
 ├── resources/             # Icons, copyright text, OCR language data (ocr-data)
 └── out/                   # Build output
 ```

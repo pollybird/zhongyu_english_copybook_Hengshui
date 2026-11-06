@@ -106,7 +106,7 @@ npx electron-builder --mac zip
 │   └── renderer/          # 渲染进程（index.html 主界面、print.html 打印渲染、preview.html 打印预览、sel.html 截图选区）
 │       └── src/
 │           ├── engine/    # copybook.js 排版引擎、zyecb-format.js 工程文件读写
-│           └── assets/    # 自制衡水钢笔体字体、协议文本
+│           └── assets/    # 自制衡水钢笔体、衡水中性笔体字体（woff2/woff）及协议文本
 ├── resources/             # 图标、版权文本、OCR 语言数据（ocr-data）
 └── out/                   # 构建产物
 ```
