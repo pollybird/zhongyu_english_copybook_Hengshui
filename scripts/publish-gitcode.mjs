@@ -59,15 +59,18 @@ async function apiJson(path, init = {}) {
   return text ? JSON.parse(text) : null
 }
 
+/** 自动更新清单文件（必须最后上传） */
+const MANIFESTS = new Set([
+  'latest.yml',
+  'latest-linux.yml',
+  'latest-linux-arm64.yml',
+  'latest-mac.yml',
+  'latest-mac-arm64.yml'
+])
+
 /** 需要上传的发行产物（源码包由 GitCode 自动生成，不传） */
 function collectReleaseFiles() {
-  const yml = new Set([
-    'latest.yml',
-    'latest-linux.yml',
-    'latest-linux-arm64.yml',
-    'latest-mac.yml',
-    'latest-mac-arm64.yml'
-  ])
+  const yml = MANIFESTS
   const binExts = new Set(['.appimage', '.deb', '.rpm', '.exe', '.zip', '.blockmap'])
   // 先传安装包、最后传清单：上传中断时不会出现「清单已发布但安装包缺失」的坏状态
   return readdirSync(distDir)
@@ -179,6 +182,29 @@ async function uploadOne(fileName) {
   console.log(`  ✓ ${fileName} (${(size / 1024 / 1024).toFixed(1)} MB) -> ${res.body}`)
 }
 
+/** 单文件上传，失败最多重试 3 次（每次重新申请预签名地址） */
+async function uploadWithRetry(fileName) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await uploadOne(fileName)
+      return
+    } catch (err) {
+      if (attempt >= 3) throw err
+      console.warn(`  ! ${fileName} 上传失败（第 ${attempt} 次）：${err.message}，稍后重试`)
+      await new Promise((resolve) => setTimeout(resolve, 5000 * attempt))
+    }
+  }
+}
+
+/** 固定并发数的任务池 */
+async function runPool(items, limit, worker) {
+  const queue = items.slice()
+  const runners = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+    while (queue.length) await worker(queue.shift())
+  })
+  await Promise.all(runners)
+}
+
 async function main() {
   console.log(`目标：${owner}/${repo} @ ${tag}`)
   const files = collectReleaseFiles()
@@ -191,25 +217,21 @@ async function main() {
   const release = await ensureRelease()
   const existing = existingAttachmentNames(release)
 
-  let uploaded = 0
-  for (const fileName of files) {
-    if (existing.has(fileName)) {
-      console.log(`  - 跳过已存在附件（GitCode 不支持覆盖）：${fileName}`)
-      continue
+  const pending = files.filter((name) => {
+    if (existing.has(name)) {
+      console.log(`  - 跳过已存在附件（GitCode 不支持覆盖）：${name}`)
+      return false
     }
-    for (let attempt = 1; ; attempt += 1) {
-      try {
-        await uploadOne(fileName)
-        uploaded += 1
-        break
-      } catch (err) {
-        if (attempt >= 3) throw err
-        console.warn(`  ! ${fileName} 上传失败（第 ${attempt} 次）：${err.message}，稍后重试`)
-        await new Promise((resolve) => setTimeout(resolve, 5000 * attempt))
-      }
-    }
-  }
-  console.log(`完成：新上传 ${uploaded} 个，跳过 ${files.length - uploaded} 个`)
+    return true
+  })
+  const binaries = pending.filter((name) => !MANIFESTS.has(name))
+  const manifests = pending.filter((name) => MANIFESTS.has(name))
+
+  // 安装包并发上传（跨境单连接易被限速），清单最后串行上传
+  await runPool(binaries, 4, uploadWithRetry)
+  for (const name of manifests) await uploadWithRetry(name)
+
+  console.log(`完成：新上传 ${pending.length} 个，跳过 ${files.length - pending.length} 个`)
 }
 
 main().catch((err) => {
