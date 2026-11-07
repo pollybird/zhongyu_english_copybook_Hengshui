@@ -23,7 +23,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          # 固定 24.04：ubuntu-latest 已升至 26.04（rpm 6），electron-builder 24 的
+          # fpm 生成的 spec 与 rpm 6 不兼容，rpm 目标会在 rpmbuild 阶段失败
+          - os: ubuntu-24.04
             platform: linux
             command: npx electron-builder --linux AppImage deb rpm --x64 --arm64 --publish never
           - os: windows-latest
