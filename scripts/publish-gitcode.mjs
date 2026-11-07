@@ -113,14 +113,21 @@ async function ensureRelease() {
   return created
 }
 
-/** 已存在的附件名（type=source 的是平台源码归档，不计） */
-function existingAttachmentNames(release) {
-  return new Set(
-    (release.assets ?? [])
-      .filter((a) => a.type !== 'source')
-      .map((a) => a.name)
-      .filter(Boolean)
-  )
+/** 已存在的附件（type=source 的是平台源码归档，不计），name -> {id,size} */
+function existingAttachments(release) {
+  const map = new Map()
+  for (const a of release.assets ?? []) {
+    if (a.type === 'source' || !a.name) continue
+    map.set(a.name, { id: a.id, size: a.size })
+  }
+  return map
+}
+
+/** 删除附件（GitCode 不支持覆盖上传，只能删后重传） */
+async function deleteAttachment(id) {
+  await apiJson(`/releases/${encodeURIComponent(tag)}/attach_files/${id}`, {
+    method: 'DELETE'
+  })
 }
 
 /**
@@ -215,15 +222,23 @@ async function main() {
   console.log(`待上传 ${files.length} 个文件：${files.join(', ')}`)
 
   const release = await ensureRelease()
-  const existing = existingAttachmentNames(release)
+  const existing = existingAttachments(release)
 
-  const pending = files.filter((name) => {
-    if (existing.has(name)) {
-      console.log(`  - 跳过已存在附件（GitCode 不支持覆盖）：${name}`)
-      return false
+  const pending = []
+  for (const name of files) {
+    const att = existing.get(name)
+    if (att) {
+      const sameSize = att.size === statSync(join(distDir, name)).size
+      // 清单必须与本次安装包严格一致，同名就重传；安装包大小一致则视为同一产物
+      if (!MANIFESTS.has(name) && sameSize) {
+        console.log(`  - 跳过已存在附件：${name}`)
+        continue
+      }
+      console.log(`  - 替换已存在附件：${name}`)
+      await deleteAttachment(att.id)
     }
-    return true
-  })
+    pending.push(name)
+  }
   const binaries = pending.filter((name) => !MANIFESTS.has(name))
   const manifests = pending.filter((name) => MANIFESTS.has(name))
 
