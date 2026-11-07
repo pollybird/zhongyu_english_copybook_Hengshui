@@ -23,10 +23,15 @@ const pagesEl = document.getElementById('pages')
 const btnPrint = document.getElementById('btn-print')
 const zoomLabel = document.getElementById('zoom-label')
 const pageIndicator = document.getElementById('page-indicator')
+const progressEl = document.getElementById('progress')
+const progressText = document.getElementById('progress-text')
+const progressBar = document.getElementById('progress-bar')
 
 let totalPages = 0
 let zoom = 1
 let fitWidth = true // 默认适应页宽
+// 渲染批次令牌：新数据到达时递增，旧批次在下一个让出点直接退出
+let renderToken = 0
 
 function applyZoom() {
   if (fitWidth) {
@@ -49,6 +54,21 @@ function updateIndicator() {
   pageIndicator.textContent = t('preview.page', { current, total: totalPages })
 }
 
+function showProgress(text, percent) {
+  progressEl.hidden = false
+  progressText.textContent = text
+  progressBar.value = percent
+}
+
+function hideProgress() {
+  progressEl.hidden = true
+}
+
+/** 让出一帧，给浏览器绘制进度遮罩与滚动留出时间 */
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => resolve()))
+}
+
 function applyStaticI18n() {
   document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
   document.querySelectorAll('[data-i18n]').forEach((el) => {
@@ -68,19 +88,31 @@ const localeReady = window.api.getLocale().then((locale) => {
 })
 
 window.api.onPrintData(async (settings) => {
+  const token = ++renderToken
   try {
     await localeReady
+    if (token !== renderToken) return
     const family = fontFamilyName(settings)
     await Promise.all([
       document.fonts.load(`24px "${family}"`),
       document.fonts.load(`bold 24px "${family}"`),
       document.fonts.ready
     ])
+    if (token !== renderToken) return
+
+    // 大文档排版本身也耗时，先显示遮罩并让出一帧
+    btnPrint.disabled = true
+    showProgress(t('preview.preparing'), 0)
+    await nextFrame()
 
     const pages = buildPages(settings)
+    if (token !== renderToken) return
     pagesEl.innerHTML = ''
     totalPages = pages.length
+    pageIndicator.textContent = ''
 
+    // 每渲染 2 页让出一帧，避免长文档阻塞 UI（翻页、缩放、关闭按钮）
+    const CHUNK = 2
     for (let i = 0; i < pages.length; i++) {
       const pageDiv = document.createElement('div')
       pageDiv.className = 'pdf-page'
@@ -92,6 +124,15 @@ window.api.onPrintData(async (settings) => {
       renderPage(ctx, pages[i], settings, i, pages.length)
       pageDiv.appendChild(canvas)
       pagesEl.appendChild(pageDiv)
+
+      if ((i + 1) % CHUNK === 0 || i === pages.length - 1) {
+        showProgress(
+          t('preview.rendering', { current: i + 1, total: pages.length }),
+          Math.round(((i + 1) / pages.length) * 100)
+        )
+        await nextFrame()
+        if (token !== renderToken) return
+      }
     }
 
     // 等待两帧，确保布局与光栅化完成
@@ -99,11 +140,17 @@ window.api.onPrintData(async (settings) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     )
     await document.fonts.ready
+    if (token !== renderToken) return
 
     scroll.scrollTop = 0
     applyZoom()
+    hideProgress()
+    btnPrint.disabled = false
     window.api.printRendered()
   } catch (err) {
+    if (token !== renderToken) return
+    hideProgress()
+    btnPrint.disabled = false
     console.error('打印预览页面渲染失败', err)
     // 上报主进程，避免其一直等待 print:rendered 直到超时
     window.api.printError(err && err.message ? err.message : String(err))

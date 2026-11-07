@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN" id="docroot">
   <head>
     <meta charset="UTF-8" />
@@ -10,15 +10,17 @@
     <style>
       @font-face {
         font-family: 'HengshuiFountainPen';
-        src: url('./src/assets/fonts/衡水钢笔体.woff2') format('woff2'),
-          url('./src/assets/fonts/衡水钢笔体.woff') format('woff');
+        src:
+          url('./src/assets/fonts/hengshui-fountain-pen.woff2') format('woff2'),
+          url('./src/assets/fonts/hengshui-fountain-pen.woff') format('woff');
         font-display: block;
       }
 
       @font-face {
         font-family: 'HengshuiGelPen';
-        src: url('./src/assets/fonts/衡水中性笔体.woff2') format('woff2'),
-          url('./src/assets/fonts/衡水中性笔体.woff') format('woff');
+        src:
+          url('./src/assets/fonts/hengshui-gel-pen.woff2') format('woff2'),
+          url('./src/assets/fonts/hengshui-gel-pen.woff') format('woff');
         font-display: block;
       }
 
@@ -140,6 +142,37 @@
         width: 100%;
         height: 100%;
       }
+
+      /* 大文档分帧渲染时的进度遮罩 */
+      #progress {
+        position: absolute;
+        top: 48px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(82, 86, 89, 0.92);
+        z-index: 20;
+      }
+
+      #progress[hidden] {
+        display: none;
+      }
+
+      .progress-box {
+        text-align: center;
+        font-size: 14px;
+        color: #e5e7eb;
+      }
+
+      #progress-bar {
+        width: 240px;
+        height: 6px;
+        margin-top: 12px;
+        accent-color: #60a5fa;
+      }
     </style>
   </head>
   <body>
@@ -152,6 +185,12 @@
         <button id="zoom-fit" data-i18n="preview.fitWidth">适应页宽</button>
       </div>
       <span id="page-indicator"></span>
+    </div>
+    <div id="progress">
+      <div class="progress-box">
+        <div id="progress-text"></div>
+        <progress id="progress-bar" max="100" value="0"></progress>
+      </div>
     </div>
     <div id="scroll">
       <div id="pages"></div>

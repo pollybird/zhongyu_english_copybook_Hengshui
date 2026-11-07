@@ -33,7 +33,10 @@ test('serializeProject → parseProject 往返保持设置', () => {
 test('颜色字段：缺省回落默认，非法值回落默认，大小写归一', () => {
   const parsed = normalizeSettings({ line_color: 'red', trace_color: '#ABC', title: 'x' })
   assert.equal(parsed.line_color, DEFAULT_SETTINGS.line_color)
-  assert.equal(parsed.trace_color, '#abc')
+  // 3 位简写必须展开为 6 位：<input type="color"> 不认 #abc，会被浏览器改成 #000000
+  assert.equal(parsed.trace_color, '#aabbcc')
+  assert.equal(normalizeSettings({ line_color: '#8F8' }).line_color, '#88ff88')
+  assert.equal(normalizeSettings({ line_color: '#112233' }).line_color, '#112233')
   const legacy = normalizeSettings({ text_content: 'abc' })
   assert.equal(legacy.line_color, '#c0c0c0')
   assert.equal(legacy.trace_color, '#ff6464')
@@ -55,9 +58,7 @@ test('字体字段：旧工程缺省钢笔体，中性笔体可往返保存', ()
 })
 
 test('JSON 格式工程文件可解析', () => {
-  const json = new TextEncoder().encode(
-    JSON.stringify({ text_content: 'abc', title: 'JSON 标题' })
-  )
+  const json = new TextEncoder().encode(JSON.stringify({ text_content: 'abc', title: 'JSON 标题' }))
   const parsed = parseProject(json)
   assert.equal(parsed.text_content, 'abc')
   assert.equal(parsed.title, 'JSON 标题')

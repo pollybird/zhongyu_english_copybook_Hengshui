@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+resources/
+.screenshots/
+.trae-html-share-packages/
+package-lock.json
+*.md
+LICENSE

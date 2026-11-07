@@ -76,12 +76,14 @@ async function startCapture(resolvePreload) {
       width: Math.round(Math.max(...displays.map((d) => d.size.width)) * maxScale),
       height: Math.round(Math.max(...displays.map((d) => d.size.height)) * maxScale)
     }
-    const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: thumbSize })
+    const sources = await desktopCapturer.getSources({
+      types: ['screen'],
+      thumbnailSize: thumbSize
+    })
     if (!sources.length) throw new Error(translator('err.captureFailed'))
 
     for (const display of displays) {
-      const source =
-        sources.find((s) => s.display_id === String(display.id)) || sources[0]
+      const source = sources.find((s) => s.display_id === String(display.id)) || sources[0]
       if (!source) break
 
       const win = new BrowserWindow({
@@ -129,7 +131,7 @@ async function startCapture(resolvePreload) {
     if (!selWindows.length) {
       showMain()
     }
-  } catch (err) {
+  } catch {
     showMain()
     const win = getMainWindow()
     if (win && !win.isDestroyed()) {

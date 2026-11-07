@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '要发布的 tag（如 2.0.7），需与 package.json version 一致'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    name: Build ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            command: npx electron-builder --linux AppImage deb rpm --x64 --arm64 --publish never
+          - os: windows-latest
+            platform: windows
+            command: npx electron-builder --win nsis --x64 --publish never
+          - os: macos-latest
+            platform: macos
+            command: npx electron-builder --mac zip --x64 --arm64 --publish never
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Linux packaging tools
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Package
+        run: ${{ matrix.command }}
+        env:
+          # macOS 未签名，禁用证书自动发现
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.platform }}
+          if-no-files-found: error
+          path: |
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.zip
+            dist/latest*.yml
+            dist/*.blockmap
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Verify tag matches package.json
+        run: |
+          node -e "const v=require('./package.json').version; if(v!==process.env.RELEASE_TAG){console.error('tag '+process.env.RELEASE_TAG+' != version '+v);process.exit(1)}"
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: v${{ env.RELEASE_TAG }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            dist/*.exe
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/*.zip
+            dist/latest*.yml
+            dist/*.blockmap
+
+      - name: Push tag to GitCode
+        env:
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+        run: |
+          if [ -z "$GITCODE_TOKEN" ]; then
+            echo "GITCODE_TOKEN 未配置，跳过 GitCode 同步"; exit 0
+          fi
+          git remote add gitcode "https://pollybird:${GITCODE_TOKEN}@gitcode.com/pollybird/zhongyu_english_copybook_Hengshui.git"
+          git push gitcode "refs/tags/${RELEASE_TAG}"
+
+      - name: Publish artifacts to GitCode
+        env:
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+          GITCODE_TAG: ${{ env.RELEASE_TAG }}
+          DIST_DIR: dist
+        run: |
+          if [ -z "$GITCODE_TOKEN" ]; then
+            echo "GITCODE_TOKEN 未配置，跳过 GitCode 上传"; exit 0
+          fi
+          node scripts/publish-gitcode.mjs

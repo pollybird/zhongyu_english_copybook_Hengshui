@@ -5,8 +5,8 @@ Copyright (c) 2026 hengshui-fonts. Licensed under the MIT License.
 
 本字体集包含以下两款字体，均由本项目作者自行制作，以 MIT 许可随本应用一同分发：
 
-  衡水钢笔体（hengshui_fountainpen）  文件 衡水钢笔体.woff2、衡水钢笔体.woff
-  衡水中性笔体（hengshui_gelpen）      文件 衡水中性笔体.woff2、衡水中性笔体.woff
+  衡水钢笔体（hengshui_fountainpen）  文件 hengshui-fountain-pen.woff2、hengshui-fountain-pen.woff
+  衡水中性笔体（hengshui_gelpen）      文件 hengshui-gel-pen.woff2、hengshui-gel-pen.woff
 
 字体项目主页与下载：
   GitHub  https://github.com/pollybird/Hengshui_Fonts

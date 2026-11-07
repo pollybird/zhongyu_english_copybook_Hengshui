@@ -1,7 +1,8 @@
 @font-face {
   font-family: 'HengshuiFountainPen';
-  src: url('./assets/fonts/衡水钢笔体.woff2') format('woff2'),
-    url('./assets/fonts/衡水钢笔体.woff') format('woff');
+  src:
+    url('./assets/fonts/hengshui-fountain-pen.woff2') format('woff2'),
+    url('./assets/fonts/hengshui-fountain-pen.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -9,8 +10,9 @@
 
 @font-face {
   font-family: 'HengshuiGelPen';
-  src: url('./assets/fonts/衡水中性笔体.woff2') format('woff2'),
-    url('./assets/fonts/衡水中性笔体.woff') format('woff');
+  src:
+    url('./assets/fonts/hengshui-gel-pen.woff2') format('woff2'),
+    url('./assets/fonts/hengshui-gel-pen.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -25,8 +27,9 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Microsoft YaHei', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial,
+    sans-serif;
   font-size: 14px;
   color: #111827;
   background: #f3f4f6;
@@ -415,6 +418,14 @@ select.input {
   white-space: pre-wrap;
   line-height: 1.6;
   color: #374151;
+}
+
+.update-progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  margin-top: 12px;
+  accent-color: #3b82f6;
 }
 
 .modal-label {

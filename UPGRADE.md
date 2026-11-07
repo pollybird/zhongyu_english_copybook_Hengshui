@@ -1,5 +1,28 @@
 # 升级说明
 
+## v2.0.7（2026-11-07）
+
+### 修复
+
+- **3 位色值与取色器不兼容**：工程文件中的 `#rgb` 简写现在会展开为 `#rrggbb` 后再归一化。此前 `#abc` 在 Canvas 中渲染正常，但 `<input type="color">` 不认简写会被浏览器重置为 `#000000`，导致取色器显示黑、确认后颜色突变
+- **字体路径改为 ASCII**：`衡水钢笔体.woff2` / `衡水中性笔体.woff2` 等改为 `hengshui-fountain-pen.*` / `hengshui-gel-pen.*`，避免非 ASCII 文件名在 Windows 打包（asar/NSIS）与严格 URL 解析下加载失败
+- **测试命令在 Node 22 可运行**：不再对目录使用 `--test`（Node 22 报 `ERR_UNSUPPORTED_DIR_IMPORT`），改为显式列出测试文件
+
+### 改进
+
+- **自动监测更新**：新增 electron-updater 自动更新。启动 5 秒后静默检查，帮助菜单可手动检查；简体中文系统优先从 GitCode 下载，英文及其他语言优先从 GitHub 下载，主源不可用时自动切换备用源。发现新版本先确认再下载，支持「稍后」「不再提示此版本」「下载并安装」
+- **自动构建与发布**：新增 GitHub Actions 发版工作流（tag 触发），在 Linux / Windows / macOS 三平台构建安装包，发布到 GitHub Release 后同步推送 tag 与产物到 GitCode
+- **大文档预览不再卡死**：预览窗口改为分帧渲染（每 2 页让出一帧），显示「正在排版 / 正在渲染 x / y 页」进度遮罩；渲染期间禁用打印按钮，重复预览会中止上一批次
+- **工程化**：新增 ESLint（flat config）与 Prettier 配置及 `lint` / `format` 脚本；新增 GitHub Actions CI（`npm test` + `lint` + `format:check` + `build`）
+- **依赖升级**：Electron 33 → 41，Vite 5 → 6，electron-vite 2 → 3
+
+### 已知限制
+
+- macOS 安装包未签名，无法自动安装更新，检查更新时会提示手动下载
+- Linux arm64 暂无可用的更新清单，自动更新仅在 Linux x64 启用
+
+---
+
 ## v2.0.6（2026-11-06）
 
 ### 变更

@@ -4,11 +4,11 @@ import {
   DEFAULT_SETTINGS,
   FONT_FOUNTAIN_PEN,
   FONT_GEL_PEN,
-  normalizeSettings,
   serializeProject,
   parseProject
 } from './engine/zyecb-format.js'
 import { showAlert, showQuestion, showPrompt, showTextPage, setModalI18n } from './modals.js'
+import { initUpdateUI, setUpdateI18n } from './update-ui.js'
 import { createT, getLang, getDefaultDoc } from '../../shared/i18n.js'
 import agreementZh from './assets/agreement.txt?raw'
 import agreementEn from './assets/agreement.en.txt?raw'
@@ -394,11 +394,7 @@ async function loadFromPath(filePath) {
 
     // 与原版一致：若当前仅有一个空白标签，则在其中打开
     let target
-    if (
-      tabs.length === 1 &&
-      !tabs[0].filePath &&
-      !tabs[0].modified
-    ) {
+    if (tabs.length === 1 && !tabs[0].filePath && !tabs[0].modified) {
       target = tabs[0]
     } else {
       target = createTab()
@@ -565,7 +561,10 @@ function bindOcr() {
     els.ocrStatus.textContent = t('msg.ocrRecognizing')
     try {
       const text = await window.api.ocrRecognize(dataUrl, els.ocrLang.value)
-      const clean = (text || '').replace(/\n{3,}/g, '\n\n').replace(/[ \t]+\n/g, '\n').trim()
+      const clean = (text || '')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/[ \t]+\n/g, '\n')
+        .trim()
       if (!clean) {
         els.ocrStatus.hidden = true
         await showAlert(t('msg.ocrEmptyTitle'), t('msg.ocrEmpty'))
@@ -608,6 +607,8 @@ async function init() {
   lang = getLang(locale)
   t = createT(locale)
   setModalI18n(t)
+  setUpdateI18n(t)
+  initUpdateUI()
   applyStaticI18n()
 
   bindInputs()

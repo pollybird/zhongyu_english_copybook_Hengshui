@@ -36,6 +36,7 @@ const messages = {
       paste: '粘贴',
       selectAll: '全选',
       helpItem: '帮助',
+      checkUpdates: '检查更新',
       agreement: '用户协议',
       website: '官网',
       about: '关于'
@@ -56,7 +57,9 @@ const messages = {
       zoomOut: '缩小',
       zoomIn: '放大',
       fitWidth: '适应页宽',
-      page: '第 {current} / {total} 页'
+      page: '第 {current} / {total} 页',
+      preparing: '正在排版…',
+      rendering: '正在渲染 {current} / {total} 页…'
     },
 
     sel: {
@@ -150,6 +153,23 @@ const messages = {
       aboutTitle: '关于'
     },
 
+    update: {
+      availableTitle: '发现新版本',
+      available: '新版本 {version} 已发布，是否下载并安装？',
+      downloading: '正在下载更新…',
+      downloadProgress: '正在下载更新… {percent}%',
+      downloadedTitle: '更新已就绪',
+      downloaded: '新版本 {version} 已下载，重启应用后生效。',
+      restartNow: '立即重启',
+      downloadNow: '下载并安装',
+      later: '稍后',
+      skip: '不再提示此版本',
+      latest: '当前已是最新版本。',
+      checkFailed: '检查更新失败，请检查网络后重试。',
+      downloadFailed: '更新下载失败，请稍后重试或前往发布页手动下载。',
+      unsupported: '当前平台暂不支持自动更新，请前往发布页手动下载。'
+    },
+
     err: {
       renderTimeout: '页面渲染超时',
       renderFailed: '页面渲染失败: {detail}',
@@ -206,6 +226,7 @@ const messages = {
       paste: 'Paste',
       selectAll: 'Select All',
       helpItem: 'Help',
+      checkUpdates: 'Check for Updates',
       agreement: 'User Agreement',
       website: 'Website',
       about: 'About'
@@ -226,7 +247,9 @@ const messages = {
       zoomOut: 'Zoom out',
       zoomIn: 'Zoom in',
       fitWidth: 'Fit width',
-      page: 'Page {current} of {total}'
+      page: 'Page {current} of {total}',
+      preparing: 'Laying out…',
+      rendering: 'Rendering page {current} of {total}…'
     },
 
     sel: {
@@ -319,6 +342,25 @@ const messages = {
       helpTitle: 'Help',
       agreementTitle: 'User Agreement',
       aboutTitle: 'About'
+    },
+
+    update: {
+      availableTitle: 'Update Available',
+      available: 'Version {version} is available. Download and install now?',
+      downloading: 'Downloading update…',
+      downloadProgress: 'Downloading update… {percent}%',
+      downloadedTitle: 'Update Ready',
+      downloaded: 'Version {version} has been downloaded. Restart to apply the update.',
+      restartNow: 'Restart Now',
+      downloadNow: 'Download and Install',
+      later: 'Later',
+      skip: 'Skip This Version',
+      latest: 'You are already using the latest version.',
+      checkFailed: 'Failed to check for updates. Check your network and try again.',
+      downloadFailed:
+        'Failed to download the update. Try again later or download it manually from the release page.',
+      unsupported:
+        'Auto-update is not supported on this platform. Please download the installer manually.'
     },
 
     err: {

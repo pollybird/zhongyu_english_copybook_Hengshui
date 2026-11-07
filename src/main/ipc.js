@@ -232,10 +232,10 @@ export function registerIpc(getMainWindow, resolveIcon, t) {
     const rendered = waitForRender(previewWin, t)
     try {
       await loadRendererPage(previewWin, 'preview.html')
+      // 先显示窗口，让大文档分帧渲染时的进度遮罩可见
+      previewWin.show()
       previewWin.webContents.send('print:data', data)
       await rendered
-      // 渲染完成后再显示，避免白屏
-      previewWin.show()
     } catch (err) {
       if (previewWin && !previewWin.isDestroyed()) previewWin.close()
       previewWin = null

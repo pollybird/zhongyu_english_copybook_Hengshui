@@ -17,7 +17,9 @@ function ensureRoot() {
 
 function openModal(className) {
   // 同一时刻只保留一个模态框，避免快速触发时层叠
-  ensureRoot().querySelectorAll('.modal-overlay').forEach((el) => el.remove())
+  ensureRoot()
+    .querySelectorAll('.modal-overlay')
+    .forEach((el) => el.remove())
   const overlay = document.createElement('div')
   overlay.className = `modal-overlay ${className}`
   ensureRoot().appendChild(overlay)

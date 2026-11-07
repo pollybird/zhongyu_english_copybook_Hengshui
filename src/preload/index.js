@@ -11,6 +11,31 @@ contextBridge.exposeInMainWorld('api', {
     return () => ipcRenderer.removeListener('menu-action', handler)
   },
 
+  // 自动更新
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  skipUpdateVersion: (version) => ipcRenderer.invoke('update:skip-version', version),
+  onUpdateEvent: (callback) => {
+    const channels = [
+      ['update:checking', 'checking'],
+      ['update:available', 'available'],
+      ['update:not-available', 'not-available'],
+      ['update:download-progress', 'download-progress'],
+      ['update:downloaded', 'downloaded'],
+      ['update:error', 'error'],
+      ['update:unsupported', 'unsupported']
+    ]
+    const listeners = channels.map(([channel, type]) => {
+      const listener = (_event, payload) => callback({ type, ...(payload || {}) })
+      ipcRenderer.on(channel, listener)
+      return { channel, listener }
+    })
+    return () => {
+      listeners.forEach(({ channel, listener }) => ipcRenderer.removeListener(channel, listener))
+    }
+  },
+
   // 系统文件关联
   getInitialFiles: () => ipcRenderer.invoke('app:get-initial-files'),
   onOpenFile: (callback) => {
@@ -38,7 +63,8 @@ contextBridge.exposeInMainWorld('api', {
 
   // PDF 导出 / 打印（隐藏打印窗口）
   exportPdf: (filePath, data) => ipcRenderer.invoke('pdf:export', { filePath, data }),
-  printJob: (data, mode) => ipcRenderer.invoke(mode === 'preview' ? 'print:preview' : 'print:direct', data),
+  printJob: (data, mode) =>
+    ipcRenderer.invoke(mode === 'preview' ? 'print:preview' : 'print:direct', data),
 
   // 打印渲染窗口专用通道（print.html / preview.html）
   onPrintData: (callback) => {

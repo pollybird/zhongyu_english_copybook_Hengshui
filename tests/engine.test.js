@@ -11,9 +11,8 @@ globalThis.document = {
   })
 }
 
-const { tokenize, buildPages, fontFamilyName } = await import(
-  '../src/renderer/src/engine/copybook.js'
-)
+const { tokenize, buildPages, fontFamilyName } =
+  await import('../src/renderer/src/engine/copybook.js')
 const { DEFAULT_SETTINGS } = await import('../src/renderer/src/engine/zyecb-format.js')
 
 function tokensOf(pages) {

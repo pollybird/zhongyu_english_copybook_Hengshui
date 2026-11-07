@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, shell, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { registerIpc, queueOpenFile, allowPath } from './ipc'
 import { registerOcr } from './ocr'
+import { initAutoUpdater, checkForUpdates } from './updater'
 import { createT, isZhLocale } from '../shared/i18n.js'
 
 // 系统语言：zh* 用中文，其余语言一律英文兜底（app.getLocale 在 ready 后可用）
@@ -84,6 +85,7 @@ if (!gotLock) {
     if (launchFile) queueOpenFile(launchFile)
 
     createWindow()
+    initAutoUpdater(() => mainWindow)
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -190,10 +192,22 @@ function buildMenu() {
     {
       label: L.top(t('menu.file'), 'F'),
       submenu: [
-        { label: L.item(t('menu.new'), 'N'), accelerator: 'CmdOrCtrl+N', click: () => sendMenuAction('new') },
+        {
+          label: L.item(t('menu.new'), 'N'),
+          accelerator: 'CmdOrCtrl+N',
+          click: () => sendMenuAction('new')
+        },
         { type: 'separator' },
-        { label: L.item(t('menu.open'), 'O', '...'), accelerator: 'CmdOrCtrl+O', click: () => sendMenuAction('open') },
-        { label: L.item(t('menu.save'), 'S'), accelerator: 'CmdOrCtrl+S', click: () => sendMenuAction('save') },
+        {
+          label: L.item(t('menu.open'), 'O', '...'),
+          accelerator: 'CmdOrCtrl+O',
+          click: () => sendMenuAction('open')
+        },
+        {
+          label: L.item(t('menu.save'), 'S'),
+          accelerator: 'CmdOrCtrl+S',
+          click: () => sendMenuAction('save')
+        },
         {
           label: L.item(t('menu.saveAs'), 'A', '...'),
           accelerator: 'CmdOrCtrl+Shift+S',
@@ -205,7 +219,10 @@ function buildMenu() {
           accelerator: 'CmdOrCtrl+P',
           click: () => sendMenuAction('print')
         },
-        { label: L.item(t('menu.printPreview'), 'V', '...'), click: () => sendMenuAction('printPreview') },
+        {
+          label: L.item(t('menu.printPreview'), 'V', '...'),
+          click: () => sendMenuAction('printPreview')
+        },
         {
           label: L.item(t('menu.exportPdf'), 'E', '...'),
           accelerator: 'CmdOrCtrl+F',
@@ -233,7 +250,14 @@ function buildMenu() {
           accelerator: 'F1',
           click: () => sendMenuAction('help')
         },
-        { label: L.item(t('menu.agreement'), zh ? 'A' : 'U'), click: () => sendMenuAction('agreement') },
+        {
+          label: L.item(t('menu.checkUpdates'), 'C', '...'),
+          click: () => checkForUpdates()
+        },
+        {
+          label: L.item(t('menu.agreement'), zh ? 'A' : 'U'),
+          click: () => sendMenuAction('agreement')
+        },
         { type: 'separator' },
         {
           label: t('menu.website'),

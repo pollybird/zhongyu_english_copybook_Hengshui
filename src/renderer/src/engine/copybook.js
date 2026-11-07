@@ -43,7 +43,6 @@ function fontStack(settings) {
 }
 
 const FOUR_LINE = '四线三格'
-const SINGLE_LINE = '单横线'
 const COPY_MODES = ['抄写', '描红+抄写']
 const TRACE_MODES = ['描红', '描红+抄写']
 

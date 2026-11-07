@@ -4,7 +4,7 @@
 
 A desktop application that generates English copybooks in the Hengshui handwriting style. Enter English text, pick a line style and a generation mode, preview in real time, then print directly or export to PDF.
 
-Current version: **2.0.6** (rewritten from PyQt6 to Electron since 2.0.0, see [UPGRADE.md](UPGRADE.md))
+Current version: **2.0.7** (rewritten from PyQt6 to Electron since 2.0.0, see [UPGRADE.md](UPGRADE.md))
 
 Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · Website: https://www.tzzhy.cn/
 
@@ -20,13 +20,15 @@ Copyright (c) 2026 Taizhou Jiangyan Zhongyu Information Technology Co., Ltd. · 
 - **Project files**: `.zyecb` format, bidirectionally compatible with the original PyQt6 v1.1.1, with file association registered (double-click to open)
 - **Print & Print Preview** (new in 2.0.2): no need to export a PDF first — **Ctrl+P** opens the system print dialog directly; the preview window lets you check each page, zoom, and follow page numbers while scrolling
 - **Automatic Chinese/English UI** (new in 2.0.3): follows the system language — Chinese UI on Chinese systems, English as the fallback for everything else; the `.zyecb` project file format is unaffected
+- **Automatic update checks** (new in 2.0.7): silently checks for updates 5 seconds after launch, and can be triggered manually from **Help → Check for Updates**; Simplified Chinese systems download from GitCode, English and other languages download from GitHub, with automatic fallback to the other source
 - **Custom grid and tracing colors** (new in 2.0.5): pick the grid-line color and the tracing text color with a color picker; both are saved with the project
 - **PDF export**: multi-page A4 with high-resolution tracing/grid rendering; printing and exporting share the same A4 rendering pipeline for identical output
 - **Layout engine fix**: fixed the original issue where single-line mode estimated lines as four-line grid, causing duplicated words across pages
 
 ## Tech Stack
 
-- Electron 33 + electron-vite 2 + Vite 5 (plain JavaScript, no frontend framework)
+- Electron 41 + electron-vite 3 + Vite 6 (plain JavaScript, no frontend framework)
+- electron-updater auto-update (GitHub / GitCode dual source)
 - Canvas 2D layout rendering, tesseract.js offline OCR (bundled tessdata_fast language data)
 - electron-builder cross-platform packaging (Windows NSIS, Linux AppImage/deb/rpm, macOS zip/dmg)
 
@@ -50,6 +52,11 @@ npm run dev
 # Build
 npm run build
 
+# Unit tests / lint / format check
+npm test
+npm run lint
+npm run format:check
+
 # Package installer for the current platform (output to dist/)
 npm run dist
 
@@ -59,7 +66,43 @@ npx electron-builder --win nsis
 npx electron-builder --mac zip
 ```
 
-Requires Node.js 18 or later.
+Requires Node.js 20 or later (22 LTS recommended).
+
+## Auto-update & Releases
+
+### Update sources
+
+- **Simplified Chinese systems**: prefer GitCode (faster access in mainland China), fall back to GitHub on failure
+- **English and other languages**: prefer GitHub, fall back to GitCode on failure
+- Checks silently 5 seconds after launch; can also be triggered from **Help → Check for Updates**
+- A new version is confirmed before downloading; you can choose **Later**, **Skip This Version**, or **Download and Install**, then restart immediately once downloaded
+
+Platform limitations:
+
+- **Windows (x64)** and **Linux x64** support auto-update (on Windows arm64, use the x64 installer — Windows runs it via emulation)
+- **macOS** builds are unsigned and cannot pass the auto-install signature check; the app will ask you to download manually from the release page
+- **Linux arm64** has no separate update manifest (electron-updater does not recognize `latest-linux-arm64.yml`); download manually
+
+### Release process
+
+1. Bump `version` in `package.json`, commit and push
+2. Create a tag matching the version (e.g. `2.0.7`, **without** a `v` prefix) and push it:
+
+   ```bash
+   git tag 2.0.7
+   git push origin 2.0.7
+   ```
+
+3. GitHub Actions ([`.github/workflows/release.yml`](.github/workflows/release.yml)) builds on all three platforms:
+   - Linux: AppImage / deb / rpm (x64 + arm64)
+   - Windows: NSIS installer (x64)
+   - macOS: zip (x64 + arm64)
+4. Artifacts are uploaded to the GitHub Release, the tag is pushed to GitCode, and the installers plus `latest*.yml` are uploaded to the GitCode Release
+5. You can also run the `Release` workflow manually from the Actions page and provide the tag
+
+Configure the `GITCODE_TOKEN` repository secret (a GitCode access token). Without it, only the GitHub Release is published and GitCode sync is skipped.
+
+Auto-update requires the filenames in `latest.yml` / `latest-linux.yml` to match the uploaded installers exactly, so the `electron-builder` `artifactName` uses ASCII names — do not change them casually.
 
 ## Usage
 
@@ -107,6 +150,9 @@ Requires Node.js 18 or later.
 │           ├── engine/    # copybook.js layout engine, zyecb-format.js project file I/O
 │           └── assets/    # Self-made Hengshui Fountain Pen and Gel Pen fonts (woff2/woff), agreement texts
 ├── resources/             # Icons, copyright text, OCR language data (ocr-data)
+├── scripts/               # Release scripts (publish-gitcode.mjs)
+├── tests/                 # Unit tests (Node built-in test runner)
+├── .github/workflows/     # GitHub Actions: CI and tag-triggered multi-platform release
 └── out/                   # Build output
 ```
 
