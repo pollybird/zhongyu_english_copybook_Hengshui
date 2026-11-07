@@ -10,8 +10,9 @@
 
 ### 改进
 
+- **macOS 产物改为 DMG**：GitHub Actions 构建 `x64` 与 `arm64` 两个 DMG（含 blockmap），替换原先的 zip
 - **自动监测更新**：新增 electron-updater 自动更新。启动 5 秒后静默检查，帮助菜单可手动检查；简体中文系统优先从 GitCode 下载，英文及其他语言优先从 GitHub 下载，主源不可用时自动切换备用源。发现新版本先确认再下载，支持「稍后」「不再提示此版本」「下载并安装」
-- **自动构建与发布**：新增 GitHub Actions 发版工作流（tag 触发），在 Linux / Windows / macOS 三平台构建安装包，发布到 GitHub Release 后同步推送 tag 与产物到 GitCode
+- **自动构建与发布**：新增 GitHub Actions 发版工作流（tag 触发），三平台构建并发布 GitHub Release；GitCode 镜像通过 `npm run publish:gitcode` 在本地同步
 - **大文档预览不再卡死**：预览窗口改为分帧渲染（每 2 页让出一帧），显示「正在排版 / 正在渲染 x / y 页」进度遮罩；渲染期间禁用打印按钮，重复预览会中止上一批次
 - **工程化**：新增 ESLint（flat config）与 Prettier 配置及 `lint` / `format` 脚本；新增 GitHub Actions CI（`npm test` + `lint` + `format:check` + `build`）
 - **依赖升级**：Electron 33 → 41，Vite 5 → 6，electron-vite 2 → 3

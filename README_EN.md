@@ -96,7 +96,7 @@ Platform limitations:
 3. GitHub Actions ([`.github/workflows/release.yml`](.github/workflows/release.yml)) builds on all three platforms:
    - Linux: AppImage / deb / rpm (x64 + arm64)
    - Windows: NSIS installer (x64)
-   - macOS: zip (x64 + arm64)
+   - macOS: dmg (x64 + arm64)
 4. Artifacts are uploaded to the GitHub Release
 5. Mirroring to GitCode is best done locally (cross-border uploads of large installers from GitHub runners are heavily throttled and can time out):
 

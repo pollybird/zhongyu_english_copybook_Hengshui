@@ -64,7 +64,7 @@ npm run dist
 # 指定平台 / 架构
 npx electron-builder --linux AppImage deb rpm   # 可选 --x64 / --arm64
 npx electron-builder --win nsis
-npx electron-builder --mac zip
+npx electron-builder --mac dmg
 ```
 
 要求 Node.js 20 及以上（推荐 22 LTS）。
@@ -97,7 +97,7 @@ npx electron-builder --mac zip
 3. GitHub Actions（[`.github/workflows/release.yml`](.github/workflows/release.yml)）自动在三平台构建：
    - Linux：AppImage / deb / rpm（x64 + arm64）
    - Windows：NSIS 安装包（x64）
-   - macOS：zip（x64 + arm64）
+   - macOS：dmg（x64 + arm64）
 4. 构建产物自动上传到 GitHub Release
 5. GitCode 镜像建议在本地执行（GitHub Runner 跨境上传大安装包会被限速，CI 内可能超时）：
 

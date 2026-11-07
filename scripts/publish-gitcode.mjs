@@ -71,7 +71,7 @@ const MANIFESTS = new Set([
 /** 需要上传的发行产物（源码包由 GitCode 自动生成，不传） */
 function collectReleaseFiles() {
   const yml = MANIFESTS
-  const binExts = new Set(['.appimage', '.deb', '.rpm', '.exe', '.zip', '.blockmap'])
+  const binExts = new Set(['.appimage', '.deb', '.rpm', '.exe', '.dmg', '.zip', '.blockmap'])
   // 先传安装包、最后传清单：上传中断时不会出现「清单已发布但安装包缺失」的坏状态
   return readdirSync(distDir)
     .filter((name) => yml.has(name) || binExts.has(extname(name).toLowerCase()))
