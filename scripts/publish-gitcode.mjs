@@ -18,7 +18,8 @@
  *   GITCODE_NOTES_FILE 可选，创建 Release 时使用的发布说明文件（UTF-8）
  *   GITCODE_TARGET     可选，tag 不存在时创建 Release 用的 target_commitish
  */
-import { readFileSync, readdirSync } from 'node:fs'
+import { createReadStream, readFileSync, readdirSync, statSync } from 'node:fs'
+import { request as httpsRequest } from 'node:https'
 import { join, extname, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -68,9 +69,10 @@ function collectReleaseFiles() {
     'latest-mac-arm64.yml'
   ])
   const binExts = new Set(['.appimage', '.deb', '.rpm', '.exe', '.zip', '.blockmap'])
+  // 先传安装包、最后传清单：上传中断时不会出现「清单已发布但安装包缺失」的坏状态
   return readdirSync(distDir)
     .filter((name) => yml.has(name) || binExts.has(extname(name).toLowerCase()))
-    .sort()
+    .sort((a, b) => Number(yml.has(a)) - Number(yml.has(b)) || a.localeCompare(b))
 }
 
 function defaultNotes() {
@@ -118,26 +120,63 @@ function existingAttachmentNames(release) {
   )
 }
 
+/**
+ * 以流式 HTTPS PUT 上传单个文件。
+ *
+ * 不用 fetch：GitHub Runner 跨境上传大安装包往往超过 undici 默认的 300 秒
+ * 响应头超时（HeadersTimeoutError），这里改用无超时的原生请求，并显式带上
+ * Content-Length，避免 chunked 传输被对象存储拒绝。
+ */
+function putFile(url, headers, filePath) {
+  return new Promise((resolve, reject) => {
+    const size = statSync(filePath).size
+    const target = new URL(url)
+    const req = httpsRequest(
+      {
+        method: 'PUT',
+        hostname: target.hostname,
+        path: target.pathname + target.search,
+        headers: { ...headers, 'Content-Length': size },
+        // 只限制「连接空闲」时长，不限制总上传时长（大安装包跨境上传可能很慢）
+        timeout: 10 * 60 * 1000
+      },
+      (res) => {
+        let body = ''
+        res.setEncoding('utf8')
+        res.on('data', (chunk) => {
+          body += chunk
+        })
+        res.on('end', () => resolve({ status: res.statusCode, body }))
+        res.on('error', reject)
+      }
+    )
+    req.on('error', reject)
+    req.on('timeout', () => req.destroy(new Error('上传连接空闲超时')))
+    const stream = createReadStream(filePath)
+    stream.on('error', (err) => {
+      req.destroy(err)
+      reject(err)
+    })
+    stream.pipe(req)
+  })
+}
+
 /** 取 OBS 预签名地址并上传单个文件 */
 async function uploadOne(fileName) {
   const filePath = join(distDir, fileName)
-  const buffer = readFileSync(filePath)
+  const size = statSync(filePath).size
   const info = await apiJson(
     `/releases/${encodeURIComponent(tag)}/upload_url?file_name=${encodeURIComponent(fileName)}`
   )
   if (!info?.url || !info?.headers) {
     throw new Error(`upload_url 响应缺少 url/headers: ${JSON.stringify(info).slice(0, 300)}`)
   }
-  const putRes = await fetch(info.url, {
-    method: 'PUT',
-    headers: info.headers,
-    body: buffer
-  })
-  const putText = await putRes.text()
-  if (!putRes.ok) {
-    throw new Error(`OBS PUT ${fileName} -> ${putRes.status}: ${putText.slice(0, 300)}`)
+  console.log(`  … ${fileName} (${(size / 1024 / 1024).toFixed(1)} MB) 上传中`)
+  const res = await putFile(info.url, info.headers, filePath)
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`OBS PUT ${fileName} -> ${res.status}: ${String(res.body).slice(0, 300)}`)
   }
-  console.log(`  ✓ ${fileName} (${(buffer.length / 1024 / 1024).toFixed(1)} MB) -> ${putText}`)
+  console.log(`  ✓ ${fileName} (${(size / 1024 / 1024).toFixed(1)} MB) -> ${res.body}`)
 }
 
 async function main() {
@@ -158,8 +197,17 @@ async function main() {
       console.log(`  - 跳过已存在附件（GitCode 不支持覆盖）：${fileName}`)
       continue
     }
-    await uploadOne(fileName)
-    uploaded += 1
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        await uploadOne(fileName)
+        uploaded += 1
+        break
+      } catch (err) {
+        if (attempt >= 3) throw err
+        console.warn(`  ! ${fileName} 上传失败（第 ${attempt} 次）：${err.message}，稍后重试`)
+        await new Promise((resolve) => setTimeout(resolve, 5000 * attempt))
+      }
+    }
   }
   console.log(`完成：新上传 ${uploaded} 个，跳过 ${files.length - uploaded} 个`)
 }

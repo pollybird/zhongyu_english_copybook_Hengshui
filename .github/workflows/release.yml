@@ -76,10 +76,13 @@ jobs:
     name: Publish
     needs: build
     runs-on: ubuntu-latest
+    # GitCode 跨境上传 1GB+ 安装包较慢，放宽任务超时
+    timeout-minutes: 180
     steps:
+      # 构建产物来自 tag（见 build 任务），发布脚本取 main：脚本修复无需重新打 tag
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.RELEASE_TAG }}
+          ref: main
 
       - uses: actions/setup-node@v4
         with:
