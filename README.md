@@ -98,10 +98,17 @@ npx electron-builder --mac zip
    - Linux：AppImage / deb / rpm（x64 + arm64）
    - Windows：NSIS 安装包（x64）
    - macOS：zip（x64 + arm64）
-4. 构建产物上传到 GitHub Release，再同步推送 tag 并将安装包与 `latest*.yml` 上传到 GitCode Release
-5. 也可在 Actions 页面手动触发 `Release` 工作流并填写 tag
+4. 构建产物自动上传到 GitHub Release
+5. GitCode 镜像建议在本地执行（GitHub Runner 跨境上传大安装包会被限速，CI 内可能超时）：
 
-需要在仓库 Secrets 中配置 `GITCODE_TOKEN`（GitCode 访问令牌）；未配置时只发布 GitHub Release，跳过 GitCode 同步。
+   ```bash
+   # 先把 GitHub Release 的全部附件下载到本地目录，然后
+   GITCODE_TOKEN=<令牌> DIST_DIR=<附件目录> npm run publish:gitcode
+   ```
+
+   也可在 Actions 页面手动触发 `Release` 工作流、填写 tag 并勾选 `gitcode` 让 CI 代为上传。
+
+GitCode 同步使用 `GITCODE_TOKEN`（GitCode 访问令牌）；手动触发工作流并勾选 `gitcode` 时，还需在仓库 Secrets 中配置同名变量。
 
 自动更新依赖 `latest.yml` / `latest-linux.yml` 中的文件名与实际上传的安装包完全一致，因此 `electron-builder` 的 `artifactName` 统一使用 ASCII 名称，请勿随意修改。
 

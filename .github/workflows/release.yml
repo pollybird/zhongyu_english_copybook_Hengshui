@@ -9,6 +9,10 @@ on:
       tag:
         description: '要发布的 tag（如 2.0.7），需与 package.json version 一致'
         required: true
+      gitcode:
+        description: '同时上传产物到 GitCode（跨境上传很慢，建议本地执行 npm run publish:gitcode）'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -114,6 +118,7 @@ jobs:
             dist/*.blockmap
 
       - name: Push tag to GitCode
+        if: ${{ github.event.inputs.gitcode == 'true' }}
         env:
           GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
         run: |
@@ -126,6 +131,7 @@ jobs:
           git push gitcode "refs/tags/${RELEASE_TAG}:refs/tags/${RELEASE_TAG}"
 
       - name: Publish artifacts to GitCode
+        if: ${{ github.event.inputs.gitcode == 'true' }}
         env:
           GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
           GITCODE_TAG: ${{ env.RELEASE_TAG }}

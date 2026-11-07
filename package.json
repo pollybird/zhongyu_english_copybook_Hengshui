@@ -16,7 +16,8 @@
     "format:check": "prettier --check .",
     "pack": "electron-vite build && electron-builder --dir",
     "dist": "electron-vite build && electron-builder",
-    "build:all": "npm run build && electron-builder --linux AppImage deb rpm --x64 --arm64 --publish never && electron-builder --win nsis --x64 --publish never && electron-builder --mac zip --x64 --arm64 --publish never"
+    "build:all": "npm run build && electron-builder --linux AppImage deb rpm --x64 --arm64 --publish never && electron-builder --win nsis --x64 --publish never && electron-builder --mac zip --x64 --arm64 --publish never",
+    "publish:gitcode": "node scripts/publish-gitcode.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

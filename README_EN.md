@@ -97,10 +97,17 @@ Platform limitations:
    - Linux: AppImage / deb / rpm (x64 + arm64)
    - Windows: NSIS installer (x64)
    - macOS: zip (x64 + arm64)
-4. Artifacts are uploaded to the GitHub Release, the tag is pushed to GitCode, and the installers plus `latest*.yml` are uploaded to the GitCode Release
-5. You can also run the `Release` workflow manually from the Actions page and provide the tag
+4. Artifacts are uploaded to the GitHub Release
+5. Mirroring to GitCode is best done locally (cross-border uploads of large installers from GitHub runners are heavily throttled and can time out):
 
-Configure the `GITCODE_TOKEN` repository secret (a GitCode access token). Without it, only the GitHub Release is published and GitCode sync is skipped.
+   ```bash
+   # Download all GitHub Release assets to a local directory first, then
+   GITCODE_TOKEN=<token> DIST_DIR=<assets-dir> npm run publish:gitcode
+   ```
+
+   You can also run the `Release` workflow manually, provide the tag, and check `gitcode` to let CI attempt the upload.
+
+GitCode sync uses `GITCODE_TOKEN` (a GitCode access token); to let the workflow upload, add the same secret in the repository settings.
 
 Auto-update requires the filenames in `latest.yml` / `latest-linux.yml` to match the uploaded installers exactly, so the `electron-builder` `artifactName` uses ASCII names — do not change them casually.
 
